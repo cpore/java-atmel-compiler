@@ -1,2 +1,26 @@
 /bin
 .project
+.classpath
+.externalToolBuilders
+#ignore all compiled classes
+MJ.jar
+MJPA2.jar
+javacup.dump
+/src/mjparser/mj.java
+/src/mjparser/sym.java
+/src/mjparser/Yylex.java
+src/MJDriver.class
+src/MJPA2Driver.class
+src/exceptions/InternalException.class
+src/exceptions/SemanticException.class
+src/mjparser/CUP$mj$actions.class
+src/mjparser/ParseException.class
+src/mjparser/SymbolValue.class
+src/mjparser/Yylex.class
+src/mjparser/mj.class
+src/mjparser/sym.class
+
+#ignore svn
+/.svn
+
+

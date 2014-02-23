@@ -16,4 +16,5 @@ do
 
 done
 
-
+# I added this to clean up the file afterwards -cpore
+rm t
