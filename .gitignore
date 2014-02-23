@@ -20,7 +20,13 @@ src/mjparser/Yylex.class
 src/mjparser/mj.class
 src/mjparser/sym.class
 
+#ignore generated source files
+CupTestCases/*.s
+CupTestCases/*.class
+
 #ignore svn
 /.svn
 
+#ignore backup files
+*.~
 

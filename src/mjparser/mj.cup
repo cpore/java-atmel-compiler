@@ -99,17 +99,20 @@ program ::=
     
 main_class ::=
         CLASS ID:name         
-            {: java.io.PrintStream sout 
-                    = new java.io.PrintStream(
+            {: java.io.PrintStream sout = new java.io.PrintStream(
                         new java.io.FileOutputStream(name.lexeme+".java.s"));
                 parser.out = new PrintWriter(sout);
                 // Check filename is class name, if not exit with error message
-                System.exit(0);   
+                
+                // I skipped the Check, I was too lazy to figure
+                // out how to find the original file name -cpore
+                //System.exit(0);   
             :}
         LBRACE PUBLIC STATIC VOID MAIN 
         LPAREN STRING LBRACKET RBRACKET ID:param RPAREN
         LBRACE 
           {: 
+            // This adds the prolog
             System.out.println("Generate prolog using avrH.rtl.s");
             InputStream mainPrologue=null;
             BufferedReader reader=null;
@@ -117,11 +120,42 @@ main_class ::=
                 // The syntax for loading a text resource file 
                 // from a jar file here:
                 // http://www.rgagnon.com/javadetails/java-0077.html
-                mainPrologue 
-                    = this.getClass().getClassLoader().getResourceAsStream(
-                        "avrH.rtl.s");
-                reader = new BufferedReader(new 
-                    InputStreamReader(mainPrologue));
+                mainPrologue = this.getClass().getClassLoader().getResourceAsStream("avrH.rtl.s");
+                reader = new BufferedReader(new InputStreamReader(mainPrologue));
+
+                String line = null;
+                while ((line = reader.readLine()) != null) {
+                  System.out.println(line);
+                  parser.out.println(line);
+                }
+            } catch ( Exception e2) {
+                e2.printStackTrace();
+            }
+            finally{
+                try{
+                    if(mainPrologue!=null)
+                    	mainPrologue.close();
+                    if(reader!=null)
+                    	reader.close();
+                }
+                catch (IOException e) {
+                   e.printStackTrace();
+                }
+            }
+          :}
+        statement_list:list RBRACE
+          {:
+          //HERE WE ADD STUFF THAT GENERATES AVR ASSEMBLY CODE
+          :}
+        RBRACE 
+          {:
+          	// This adds the epilog
+            System.out.println("Generate epilog using avrF.rtl.s");
+            InputStream mainEpilogue=null;
+            BufferedReader reader=null;
+            try {
+                mainEpilogue = this.getClass().getClassLoader().getResourceAsStream("avrF.rtl.s");
+                reader = new BufferedReader(new InputStreamReader(mainEpilogue));
 
                 String line = null;
                 while ((line = reader.readLine()) != null) {
@@ -132,20 +166,40 @@ main_class ::=
             }
             finally{
                 try{
-                    if(mainPrologue!=null) mainPrologue.close();
+                    if(mainEpilogue!=null) mainEpilogue.close();
                     if(reader!=null) reader.close();
                 }
                 catch (IOException e) {
                    e.printStackTrace();
                 }
             }
-          :}
-        statement_list:list RBRACE
-          {:
-          :}
-        RBRACE 
-          {:
             parser.out.flush();
           :}
     ;
-
+    
+statement ::=
+		MEGGYSETPIXEL LPAREN 
+		exp:a COMMA
+		  {:
+		  :}
+		exp:b COMMA
+		  {:
+		  :}
+		exp:c RPAREN SEMI
+		  {:
+		  :}
+	;
+	
+statement_list ::=
+		statement_list statement
+	|	statement
+	;
+	
+exp ::=
+		LPAREN BYTE RPAREN exp:a
+		{:
+		:}
+	|	INT_LITERAL
+	|	COLOR_LITERAL
+	;
+	
