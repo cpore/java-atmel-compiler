@@ -20,9 +20,16 @@ do
       noext=`echo $filename| cut -d'.' -f 1`
       # Run the java-compiled program
       java $noext > t2
-      diff t1 t2
+      results=$(diff t1 t2)
+      echo "$results"
+      if [ -z $results ]
+      then
+        echo -e "Test \e[0;32mPASSED\e[0m"
+      else
+        echo -e "Test \e[0;31mFAILED\e[0m"
+      fi
     else
-      echo "Skipping Tests."
+      echo -e "Test \e[0;33mSKIPPED\e[0m"
     fi
 
     echo "DONE with $filename"
