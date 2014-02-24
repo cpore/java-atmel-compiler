@@ -84,6 +84,7 @@ non terminal Integer exp;
 non terminal statement;
 non terminal statement_list;
 non terminal main_class;
+non terminal main_method;
 
 /* Declare precedence and associativity  here */
 precedence left TIMES;
@@ -102,18 +103,29 @@ main_class ::=
             {: java.io.PrintStream sout = new java.io.PrintStream(
                         new java.io.FileOutputStream(name.lexeme+".java.s"));
                 parser.out = new PrintWriter(sout);
-                // Check filename is class name, if not exit with error message
                 
-                // I skipped the Check, I was too lazy to figure
-                // out how to find the original file name -cpore
-                //System.exit(0);   
+                // Check filename is class name, if not exit with error message
+                String expectedClassName = parser.programName.substring(0, parser.programName.lastIndexOf("."));
+                if(!expectedClassName.equals(name.lexeme)){
+                	System.out.println("Error: Could not find or load main class " + expectedClassName);
+                	System.exit(1);
+                }   
             :}
-        LBRACE PUBLIC STATIC VOID MAIN 
+        LBRACE
+        main_method
+        RBRACE 
+          {:
+          	parser.out.flush();
+          :}
+    ;
+    
+main_method ::=
+		PUBLIC STATIC VOID MAIN 
         LPAREN STRING LBRACKET RBRACKET ID:param RPAREN
         LBRACE 
           {: 
             // This adds the prolog
-            System.out.println("Generate prolog using avrH.rtl.s");
+            //System.out.println("Generate prolog using avrH.rtl.s");
             InputStream mainPrologue=null;
             BufferedReader reader=null;
             try {
@@ -125,7 +137,7 @@ main_class ::=
 
                 String line = null;
                 while ((line = reader.readLine()) != null) {
-                  System.out.println(line);
+                  //System.out.println(line);
                   parser.out.println(line);
                 }
             } catch ( Exception e2) {
@@ -143,14 +155,17 @@ main_class ::=
                 }
             }
           :}
-        statement_list:list RBRACE
+        statement_list:list 
           {:
-          //HERE WE ADD STUFF THAT GENERATES AVR ASSEMBLY CODE
+          	// HERE WE CAN ADD STUFF THAT GENERATES AVR
+          	// ASSEMBLY CODE FOR THE LIST IF WE NEED TO
           :}
-        RBRACE 
+        RBRACE
           {:
-          	// This adds the epilog
-            System.out.println("Generate epilog using avrF.rtl.s");
+          
+          
+          	// This adds the epilog after the last brace of main
+            //System.out.println("Generate epilog using avrF.rtl.s");
             InputStream mainEpilogue=null;
             BufferedReader reader=null;
             try {
@@ -173,20 +188,89 @@ main_class ::=
                    e.printStackTrace();
                 }
             }
-            parser.out.flush();
           :}
-    ;
+    |	PUBLIC STATIC VOID MAIN 
+        LPAREN STRING LBRACKET RBRACKET ID:param RPAREN
+        LBRACE 
+          {: 
+            // This adds the prolog
+            //System.out.println("Generate prolog using avrH.rtl.s");
+            InputStream mainPrologue=null;
+            BufferedReader reader=null;
+            try {
+                // The syntax for loading a text resource file 
+                // from a jar file here:
+                // http://www.rgagnon.com/javadetails/java-0077.html
+                mainPrologue = this.getClass().getClassLoader().getResourceAsStream("avrH.rtl.s");
+                reader = new BufferedReader(new InputStreamReader(mainPrologue));
+
+                String line = null;
+                while ((line = reader.readLine()) != null) {
+                  //System.out.println(line);
+                  parser.out.println(line);
+                }
+            } catch ( Exception e2) {
+                e2.printStackTrace();
+            }
+            finally{
+                try{
+                    if(mainPrologue!=null)
+                    	mainPrologue.close();
+                    if(reader!=null)
+                    	reader.close();
+                }
+                catch (IOException e) {
+                   e.printStackTrace();
+                }
+            }
+          :}
+       RBRACE
+          {:
+          
+          
+          	// This adds the epilog after the last brace of main
+            //System.out.println("Generate epilog using avrF.rtl.s");
+            InputStream mainEpilogue=null;
+            BufferedReader reader=null;
+            try {
+                mainEpilogue = this.getClass().getClassLoader().getResourceAsStream("avrF.rtl.s");
+                reader = new BufferedReader(new InputStreamReader(mainEpilogue));
+
+                String line = null;
+                while ((line = reader.readLine()) != null) {
+                  parser.out.println(line);
+                }
+            } catch ( Exception e2) {
+                e2.printStackTrace();
+            }
+            finally{
+                try{
+                    if(mainEpilogue!=null) mainEpilogue.close();
+                    if(reader!=null) reader.close();
+                }
+                catch (IOException e) {
+                   e.printStackTrace();
+                }
+            }
+          :}
+	;
     
 statement ::=
 		MEGGYSETPIXEL LPAREN 
 		exp:a COMMA
-		  {:
-		  :}
 		exp:b COMMA
-		  {:
-		  :}
 		exp:c RPAREN SEMI
 		  {:
+		  	parser.out.println("    ### Meggy.setPixel(x,y,color) call");
+		  	parser.out.println("    # load a one byte expression off stack");
+		  	parser.out.println("    pop    r20");
+		  	parser.out.println("    # load a one byte expression off stack");
+		  	parser.out.println("    pop    r22");
+		  	parser.out.println("    # load a one byte expression off stack");
+		  	parser.out.println("    pop    r24");
+		  	parser.out.println("    call   _Z6DrawPxhhh");
+		  	parser.out.println("    call   _Z12DisplaySlatev");
+		  	parser.out.println();
 		  :}
 	;
 	
@@ -197,9 +281,32 @@ statement_list ::=
 	
 exp ::=
 		LPAREN BYTE RPAREN exp:a
-		{:
-		:}
-	|	INT_LITERAL
-	|	COLOR_LITERAL
+		  {: 
+			parser.out.println("    # Casting int to byte by popping");
+			parser.out.println("    # 2 bytes off stack and only pushing low order bits");
+			parser.out.println("    # back on.  Low order bits are on top of stack.");
+			parser.out.println("    pop    r24");
+			parser.out.println("    pop    r25");
+			parser.out.println("    push   r24");
+			parser.out.println();
+		  :}
+	|	INT_LITERAL:i
+		  {:
+			parser.out.println("    # Load constant int from Symbol");
+			parser.out.println("    ldi    r24,lo8("+i.value+")");
+			parser.out.println("    ldi    r25,hi8("+i.value+")");
+			parser.out.println("    # push two byte expression onto stack");
+			parser.out.println("    push   r25");
+			parser.out.println("    push   r24");
+			parser.out.println();
+		  :}
+	|	COLOR_LITERAL:i
+		  {: 
+			parser.out.println("    # Load Color expression from Symbol");
+			parser.out.println("    ldi    r24,lo8("+i.value+")");
+			parser.out.println("    # push two byte expression onto stack");
+			parser.out.println("    push   r24");
+			parser.out.println();
+		   :}
 	;
 	

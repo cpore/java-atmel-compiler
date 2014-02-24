@@ -1,7 +1,9 @@
+# eclipse stuff
 /bin
 .project
 .classpath
 .externalToolBuilders
+
 #ignore all compiled classes
 MJ.jar
 MJPA2.jar
@@ -23,10 +25,11 @@ src/mjparser/sym.class
 #ignore generated source files
 CupTestCases/*.s
 CupTestCases/*.class
+CupTestCases/mjsimPictures
 
 #ignore svn
 /.svn
 
 #ignore backup files
-*.~
+*~
 
