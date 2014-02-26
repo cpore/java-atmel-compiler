@@ -1,0 +1,4 @@
+Test Cases have been moved to the directories LexTestCases and CupTestCases for
+testing the lexer and the parser, respectively. A regression script has been
+written for the two different types of tests and are located in test case 
+folders, if you wish to use them.
