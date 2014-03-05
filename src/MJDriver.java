@@ -13,7 +13,7 @@ import java.io.FileReader;
 import java.io.PrintWriter;
 
 import mjparser.*;
-//import ast_visitors.*;
+import ast_visitors.*;
 
 public class MJDriver {
 
@@ -46,8 +46,15 @@ public class MJDriver {
           System.out.println("Driver finds input filename: " + parser.programName);
 
           // and parse
-          parser.parse();
-          /*
+          //parser.parse();
+          
+          ast.node.Node ast_root = (ast.node.Node)parser.parse().value;
+
+            if(ast_root == null) {
+                System.err.println("AST was not generated.");
+                System.err.println("Modify your PA0.cup file to generate one");
+                System.exit(1);
+            }
                 
           // print ast to file
           java.io.PrintStream astout =
@@ -56,10 +63,22 @@ public class MJDriver {
           ast_root.accept(new DotVisitor(new PrintWriter(astout)));
           System.out.println("Printing AST to " + filename + ".ast.dot");
 
+          // generate AVR code
+          java.io.PrintStream avrsout =
+        		  new java.io.PrintStream(
+        				  new java.io.FileOutputStream(filename + ".s"));
+          ast_root.accept(new AVRgenVisitor(new PrintWriter(avrsout)));
+          System.out.println("Printing Atmel assembly to " + filename + ".s");
+
+          // need to do a Type-checker that doesn't use a symbol table as well
+          
+          
+          /* not doing symbol tables yet
           // create the symbol table
           BuildSymTable stVisitor = new BuildSymTable();
           ast_root.accept(stVisitor);
           symtable.SymTable globalST = stVisitor.getSymTable();
+          
           
           // print ast to file
           java.io.PrintStream STout =
@@ -67,7 +86,8 @@ public class MJDriver {
                 new java.io.FileOutputStream(filename + ".ST.dot"));
           System.out.println("Printing symbol table to " + filename + ".ST.dot");
           globalST.outputDot(STout);
-                    
+          
+                 
           // perform type checking 
           ast_root.accept(new CheckTypes(globalST));
           

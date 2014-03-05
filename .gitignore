@@ -27,6 +27,18 @@ CupTestCases/*.s
 CupTestCases/*.class
 CupTestCases/mjsimPictures
 
+TestCasesMeggy/*.s
+TestCasesMeggy/mjsimPictures
+TestCasesMeggy/output.log
+TestCasesMeggy/t1
+TestCasesMeggy/t2
+
+src/ast/node/*.class
+src/ast/visitor/*.class
+
+src/ast_visitors/*.class
+
+
 #ignore svn
 /.svn
 

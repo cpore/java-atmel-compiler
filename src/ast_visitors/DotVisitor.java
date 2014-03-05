@@ -77,7 +77,7 @@ public class DotVisitor extends DepthFirstVisitor {
            out.println(nodeCount);
        }
        
-       // increment for ourseves
+       // increment for ourselves
        nodeCount++;
    }
 
