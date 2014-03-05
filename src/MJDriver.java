@@ -52,7 +52,7 @@ public class MJDriver {
 
             if(ast_root == null) {
                 System.err.println("AST was not generated.");
-                System.err.println("Modify your PA0.cup file to generate one");
+                System.err.println("Modify your mj.cup file to generate one");
                 System.exit(1);
             }
                 

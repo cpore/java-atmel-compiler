@@ -11,6 +11,8 @@ import java.io.InputStreamReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 
+import ast.node.*;
+
 
 parser code {:
 
@@ -79,16 +81,20 @@ terminal SymbolValue THIS;
 /* bogus terminal for unary precedence declaration */
 terminal UMINUS;
 
-non terminal program;
-non terminal Integer exp;
-non terminal statement;
-non terminal statement_list;
-non terminal main_class;
-non terminal main_method;
+non terminal /* some type */ program;
+non terminal IExp exp;
+non terminal /* some type */ IStatement statement;
+non terminal LinkedList<IStatement> statement_list;
+non terminal /* some type */ main_class;
+non terminal /* some type */ main_method;
 
 /* Declare precedence and associativity  here */
+
+precedence left PLUS, MINUS;
 precedence left TIMES;
 precedence right UMINUS;
+precedence left EQUAL;
+precedence left AND;
 
 
 /* Meggy Java Grammar */
@@ -256,57 +262,94 @@ main_method ::=
 	;
     
 statement ::=
-		MEGGYSETPIXEL LPAREN 
-		exp:a COMMA
-		exp:b COMMA
-		exp:c RPAREN SEMI
+		MEGGYSETPIXEL:op LPAREN exp:a COMMA	exp:b COMMA	exp:c RPAREN SEMI
 		  {:
-		  	parser.out.println("    ### Meggy.setPixel(x,y,color) call");
-		  	parser.out.println("    # load a one byte expression off stack");
-		  	parser.out.println("    pop    r20");
-		  	parser.out.println("    # load a one byte expression off stack");
-		  	parser.out.println("    pop    r22");
-		  	parser.out.println("    # load a one byte expression off stack");
-		  	parser.out.println("    pop    r24");
-		  	parser.out.println("    call   _Z6DrawPxhhh");
-		  	parser.out.println("    call   _Z12DisplaySlatev");
-		  	parser.out.println();
+		  	RESULT = new MeggySetPixel(op.line, op.pos, a, b, c); 
 		  :}
 	;
 	
 statement_list ::=
-		statement_list statement
-	|	statement
+		statement_list:list statement:s
+		  {:
+			  if(s != null) {
+	            list.add(s);
+	          } 
+	          RESULT = list;
+		  :}
+	|	statement:s
+		  {:
+			LinkedList<IStatement> list = new LinkedList<IStatement>();
+            list.add(s);
+            RESULT = list;
+		  :}
 	;
 	
 exp ::=
-		LPAREN BYTE RPAREN exp:a
+		exp:a AND:op exp:b
+		  {:
+		    RESULT = new AndExp(op.line, op.pos, a, b);
+		  :}
+	|	exp:a EQUAL:op exp:b
+		  {:
+		    RESULT = new EqualExp(op.line, op.pos, a, b);
+		  :}
+	|	exp:a PLUS:op exp:b
+		  {:
+		    RESULT = new PlusExp(op.line, op.pos, a, b);
+		  :}
+	|	exp:a MINUS:op exp:b
+		  {:
+		    RESULT = new MinusExp(op.line, op.pos, a, b);
+		  :}
+	|	exp:a TIMES:op exp:b
+		  {:
+		    RESULT = new MulExp(op.line, op.pos, a, b);
+		  :}
+	|	UMINUS exp:a
+		  {:
+		  	//TODO
+		  :}
+	|	MEGGYGETPIXEL LPAREN exp:a COMMA exp:b RPAREN	
+		  {:
+		    //TODO
+		  :}
+	|	MEGGYCHECKBUTTON LPAREN exp:a RPAREN
+		  {:
+		    //TODO
+		  :}	
+	|	LPAREN BYTE RPAREN exp:a
 		  {: 
-			parser.out.println("    # Casting int to byte by popping");
-			parser.out.println("    # 2 bytes off stack and only pushing low order bits");
-			parser.out.println("    # back on.  Low order bits are on top of stack.");
-			parser.out.println("    pop    r24");
-			parser.out.println("    pop    r25");
-			parser.out.println("    push   r24");
-			parser.out.println();
+			//TODO
+			//NOT SURE HOW TO ADD BYTE CAST AND
+			//EXPRESSION TO AST AT SAME TIME.
 		  :}
 	|	INT_LITERAL:i
 		  {:
-			parser.out.println("    # Load constant int from Symbol");
-			parser.out.println("    ldi    r24,lo8("+i.value+")");
-			parser.out.println("    ldi    r25,hi8("+i.value+")");
-			parser.out.println("    # push two byte expression onto stack");
-			parser.out.println("    push   r25");
-			parser.out.println("    push   r24");
-			parser.out.println();
+			RESULT = new IntLiteral(i.line, i.pos, i.lexeme, i.value);
 		  :}
 	|	COLOR_LITERAL:i
 		  {: 
-			parser.out.println("    # Load Color expression from Symbol");
-			parser.out.println("    ldi    r24,lo8("+i.value+")");
-			parser.out.println("    # push two byte expression onto stack");
-			parser.out.println("    push   r24");
-			parser.out.println();
-		   :}
+			RESULT = new ColorLiteral(i.line, i.pos, i.lexeme, i.value);
+		  :}
+	| 	BUTTON_LITERAL:i
+		  {: 
+			RESULT = new ButtonLiteral(i.line, i.pos, i.lexeme, i.value);
+		  :}
+	|	TRUE:i
+		  {: 
+			RESULT = new TrueLiteral(i.line, i.pos, i.lexeme, i.value);
+		  :}
+	|	FALSE:i
+		  {: 
+			RESULT = new FalseLiteral(i.line, i.pos, i.lexeme, i.value);
+		  :}
+	|	NOT:i exp:a
+	 	  {: 
+			RESULT = new NotExp(i.line, i.pos, a);
+		  :}
+	|	LPAREN exp:a RPAREN
+	 	  {: 
+			RESULT = a;
+		  :}
 	;
 	
