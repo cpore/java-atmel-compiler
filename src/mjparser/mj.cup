@@ -89,12 +89,12 @@ non terminal MainClass main_class;
 
 /* Declare precedence and associativity  here */
 
+precedence left EQUAL;
 precedence left PLUS, MINUS;
 precedence left TIMES;
-precedence left EQUAL;
 precedence left AND;
 precedence left ELSE;
-
+precedence left UMINUS, BYTE;
 
 /* Meggy Java Grammar */
 start with program;
@@ -272,13 +272,13 @@ statement ::=
 		  :}
 	|	IF:op LPAREN exp:a RPAREN statement:s
 		  {:
-		  	System.out.println("If Expression: " + a.getClass().getSimpleName());
-		  	
-		  	RESULT = new IfStatement(op.line, op.pos, a, s, s);
+		  	//System.out.println("If Expression: " + a.getClass().getSimpleName());
+            //ELSE statement is just a bogus statement
+		  	RESULT = new IfStatement(op.line, op.pos, a, s, new MeggyDelay(0,0, null));
 		  :}
 	|	IF:op LPAREN exp:a RPAREN statement:s1 ELSE statement:s2
 		  {:
-		  	System.out.println("If/Else Expression: " + a.getClass().getSimpleName());
+		  	//System.out.println("If/Else Expression: " + a.getClass().getSimpleName());
 		  	RESULT = new IfStatement(op.line, op.pos, a, s1, s2);
 		  :}
 	|	WHILE:op LPAREN exp:a RPAREN statement:s
@@ -310,7 +310,7 @@ exp ::=
 		  :}
 	|	exp:a EQUAL:op exp:b
 		  {:
-		  	System.out.println("EqualExp a: " + a.getClass().getSimpleName() + " EqualExp b: " + b.getClass().getSimpleName());
+		  	//System.out.println("EqualExp a: " + a.getClass().getSimpleName() + " EqualExp b: " + b.getClass().getSimpleName());
 		    RESULT = new EqualExp(op.line, op.pos, a, b);
 		  :}
 	|	exp:a PLUS:op exp:b
@@ -329,6 +329,7 @@ exp ::=
 		  {:
 		  	RESULT = new NegExp(op.line, op.pos, a);
 		  :}
+          %prec UMINUS
 	|	MEGGYGETPIXEL:op LPAREN exp:a COMMA exp:b RPAREN	
 		  {:
 		    RESULT = new MeggyGetPixel(op.line, op.pos, a, b);
@@ -339,9 +340,10 @@ exp ::=
 		  :}	
 	|	LPAREN BYTE:op RPAREN exp:a
 		  {: 
-		  	System.out.println("ByteCast: " + a.getClass().getSimpleName());
+		  	//System.out.println("ByteCast: " + a.getClass().getSimpleName());
 			RESULT = new ByteCast(op.line, op.pos, a);;
 		  :}
+          %prec BYTE
 	|	INT_LITERAL:i
 		  {:
 			RESULT = new IntLiteral(i.line, i.pos, i.lexeme, i.value);
@@ -368,67 +370,8 @@ exp ::=
 		  :}
 	|	LPAREN exp:a RPAREN
 	 	  {: 
-	 	  	System.out.println("Expression: " + a.getClass().getSimpleName());
-			if(a instanceof ByteCast){
-				ByteCast b = (ByteCast) a;
-				if(b.getExp() instanceof MulExp){
-					System.out.println("\tFound MulExp");
-					MulExp e = (MulExp) b.getExp();
-					b.setExp(e.getLExp());
-					e.setLExp(b);
-					RESULT = e;
-				}else if(b.getExp() instanceof PlusExp){
-					System.out.println("\tFound PlusExp");
-					PlusExp e = (PlusExp) b.getExp();
-					b.setExp(e.getLExp());
-					e.setLExp(b);
-					RESULT = e;
-				}else if(b.getExp() instanceof MinusExp){
-					System.out.println("\tFound MinusExp");
-					MinusExp e = (MinusExp) b.getExp();
-					b.setExp(e.getLExp());
-					e.setLExp(b);
-					RESULT = e;
-				}else if(b.getExp() instanceof EqualExp){
-					System.out.println("\tFound EqualExp");
-					EqualExp e = (EqualExp) b.getExp();
-					b.setExp(e.getLExp());
-					e.setLExp(b);
-					RESULT = e;
-				}else{
-					RESULT =  a;
-				}
-			}else if(a instanceof NegExp){
-				NegExp n = (NegExp) a;
-				if(n.getExp() instanceof MulExp){
-					System.out.println("\tFound MulExp");
-					MulExp e = (MulExp) n.getExp();
-					n.setExp(e.getLExp());
-					e.setLExp(n);
-					RESULT = e;
-				}else if(n.getExp() instanceof PlusExp){
-					System.out.println("\tFound PlusExp");
-					PlusExp e = (PlusExp) n.getExp();
-					n.setExp(e.getLExp());
-					e.setLExp(n);
-					RESULT = e;
-				}else if(n.getExp() instanceof MinusExp){
-					System.out.println("\tFound MinusExp");
-					MinusExp e = (MinusExp) n.getExp();
-					n.setExp(e.getLExp());
-					e.setLExp(n);
-					RESULT = e;
-				}else if(n.getExp() instanceof EqualExp){
-					System.out.println("\tFound EqualExp");
-					EqualExp e = (EqualExp) n.getExp();
-					n.setExp(e.getLExp());
-					e.setLExp(n);
-					RESULT = e;
-				}else{
-					RESULT =  a;
-				}
-			}else
-				RESULT = a;
+	 	  	//System.out.println("Expression: " + a.getClass().getSimpleName());
+			RESULT = a;
 		  :}
 	;
 	

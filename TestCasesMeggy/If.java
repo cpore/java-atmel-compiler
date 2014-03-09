@@ -12,5 +12,9 @@ class If {
 	else
 	    Meggy.setPixel( (byte)((byte)(-1)* (byte)(- (byte)7 )), (byte)6, Meggy.Color.RED );
 	    
+    if (true)
+        Meggy.setPixel( (byte)1, (byte)1, Meggy.Color.WHITE );
     }
+
+    
 }

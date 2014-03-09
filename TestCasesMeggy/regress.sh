@@ -69,6 +69,7 @@ function createPng()
 {
     for filename in `find . -name '*.dot' -type f`
     do 
+        echo "Creating $filename.png..."
         dot -Tpng $filename > $filename.png
     done
 }
