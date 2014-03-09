@@ -64,11 +64,11 @@ public class MJDriver {
           System.out.println("Printing AST to " + filename + ".ast.dot");
 
           // generate AVR code
-          java.io.PrintStream avrsout =
-        		  new java.io.PrintStream(
-        				  new java.io.FileOutputStream(filename + ".s"));
-          ast_root.accept(new AVRgenVisitor(new PrintWriter(avrsout)));
-          System.out.println("Printing Atmel assembly to " + filename + ".s");
+     //     java.io.PrintStream avrsout =
+     //   		  new java.io.PrintStream(
+     //   				  new java.io.FileOutputStream(filename + ".s"));
+     //     ast_root.accept(new AVRgenVisitor(new PrintWriter(avrsout)));
+     //     System.out.println("Printing Atmel assembly to " + filename + ".s");
 
           // need to do a Type-checker that doesn't use a symbol table as well
           

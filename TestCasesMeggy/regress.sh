@@ -65,6 +65,14 @@ function compareMJwithJava()
     echo "========================================================="
 }
 
+function createPng()
+{
+    for filename in `find . -name '*.dot' -type f`
+    do 
+        dot -Tpng $filename > $filename.png
+    done
+}
+
 ##############################################################
 # Main routine for the regression testing.
 # Will either do the comparison on a single file or
@@ -91,7 +99,16 @@ else
         compareMJwithJava $filename
     done
 
+    echo
+    echo "#### Testing with the files in OtherTestCases ####"
+    for filename in `ls OtherTestCases/*.java`
+    do
+        compareMJwithJava $filename
+    done
+
 fi
+
+createPng
 
 echo
 

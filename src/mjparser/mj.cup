@@ -81,27 +81,35 @@ terminal SymbolValue THIS;
 /* bogus terminal for unary precedence declaration */
 terminal UMINUS;
 
-non terminal /* some type */ program;
+non terminal Program program;
 non terminal IExp exp;
-non terminal /* some type */ IStatement statement;
+non terminal IStatement statement;
 non terminal LinkedList<IStatement> statement_list;
-non terminal /* some type */ main_class;
-non terminal /* some type */ main_method;
+non terminal MainClass main_class;
 
 /* Declare precedence and associativity  here */
 
 precedence left PLUS, MINUS;
 precedence left TIMES;
-precedence right UMINUS;
 precedence left EQUAL;
 precedence left AND;
+precedence left ELSE;
 
 
 /* Meggy Java Grammar */
 start with program;
 
 program ::= 
-    IMPORT MEGGY SEMI main_class
+    IMPORT MEGGY SEMI main_class:mclass
+    	{:
+    		// The last field is empty list since we are not dealing with
+    		// LinkedList<IClassDecl> yet.
+    		RESULT = new Program(mclass.getLine(), mclass.getPos(), mclass, new LinkedList<IClassDecl>());
+    	:}
+    |
+    	{:
+    	
+    	:}
     ;
     
 main_class ::=
@@ -117,19 +125,10 @@ main_class ::=
                 	System.exit(1);
                 }   
             :}
-        LBRACE
-        main_method
-        RBRACE 
-          {:
-          	parser.out.flush();
-          :}
-    ;
-    
-main_method ::=
-		PUBLIC STATIC VOID MAIN 
+        LBRACE PUBLIC STATIC VOID MAIN 
         LPAREN STRING LBRACKET RBRACKET ID:param RPAREN
-        LBRACE 
-          {: 
+        LBRACE
+        {: 
             // This adds the prolog
             //System.out.println("Generate prolog using avrH.rtl.s");
             InputStream mainPrologue=null;
@@ -163,8 +162,7 @@ main_method ::=
           :}
         statement_list:list 
           {:
-          	// HERE WE CAN ADD STUFF THAT GENERATES AVR
-          	// ASSEMBLY CODE FOR THE LIST IF WE NEED TO
+          	RESULT = new MainClass(name.line, name.pos, name.lexeme, param.lexeme, new BlockStatement(name.line, name.pos, list));
           :}
         RBRACE
           {:
@@ -195,6 +193,10 @@ main_method ::=
                 }
             }
           :}
+        RBRACE 
+          {:
+          	parser.out.flush();
+          :}
     |	PUBLIC STATIC VOID MAIN 
         LPAREN STRING LBRACKET RBRACKET ID:param RPAREN
         LBRACE 
@@ -215,7 +217,7 @@ main_method ::=
                   //System.out.println(line);
                   parser.out.println(line);
                 }
-            } catch ( Exception e2) {
+            } catch (Exception e2) {
                 e2.printStackTrace();
             }
             finally{
@@ -232,8 +234,6 @@ main_method ::=
           :}
        RBRACE
           {:
-          
-          
           	// This adds the epilog after the last brace of main
             //System.out.println("Generate epilog using avrF.rtl.s");
             InputStream mainEpilogue=null;
@@ -259,12 +259,31 @@ main_method ::=
                 }
             }
           :}
-	;
+    ;
     
-statement ::=
+statement ::= 
 		MEGGYSETPIXEL:op LPAREN exp:a COMMA	exp:b COMMA	exp:c RPAREN SEMI
 		  {:
 		  	RESULT = new MeggySetPixel(op.line, op.pos, a, b, c); 
+		  :}
+	|	MEGGYDELAY:op LPAREN exp:a RPAREN SEMI
+		  {:
+		  	RESULT = new MeggyDelay(op.line, op.pos, a);
+		  :}
+	|	IF:op LPAREN exp:a RPAREN statement:s
+		  {:
+		  	System.out.println("If Expression: " + a.getClass().getSimpleName());
+		  	
+		  	RESULT = new IfStatement(op.line, op.pos, a, s, s);
+		  :}
+	|	IF:op LPAREN exp:a RPAREN statement:s1 ELSE statement:s2
+		  {:
+		  	System.out.println("If/Else Expression: " + a.getClass().getSimpleName());
+		  	RESULT = new IfStatement(op.line, op.pos, a, s1, s2);
+		  :}
+	|	WHILE:op LPAREN exp:a RPAREN statement:s
+		  {:
+		  	RESULT = new WhileStatement(op.line, op.pos, a, s);
 		  :}
 	;
 	
@@ -291,6 +310,7 @@ exp ::=
 		  :}
 	|	exp:a EQUAL:op exp:b
 		  {:
+		  	System.out.println("EqualExp a: " + a.getClass().getSimpleName() + " EqualExp b: " + b.getClass().getSimpleName());
 		    RESULT = new EqualExp(op.line, op.pos, a, b);
 		  :}
 	|	exp:a PLUS:op exp:b
@@ -305,23 +325,22 @@ exp ::=
 		  {:
 		    RESULT = new MulExp(op.line, op.pos, a, b);
 		  :}
-	|	UMINUS exp:a
+	|	MINUS:op exp:a
 		  {:
-		  	//TODO
+		  	RESULT = new NegExp(op.line, op.pos, a);
 		  :}
-	|	MEGGYGETPIXEL LPAREN exp:a COMMA exp:b RPAREN	
+	|	MEGGYGETPIXEL:op LPAREN exp:a COMMA exp:b RPAREN	
 		  {:
-		    //TODO
+		    RESULT = new MeggyGetPixel(op.line, op.pos, a, b);
 		  :}
-	|	MEGGYCHECKBUTTON LPAREN exp:a RPAREN
+	|	MEGGYCHECKBUTTON:op LPAREN exp:a RPAREN
 		  {:
-		    //TODO
+		    RESULT = new MeggyCheckButton(op.line, op.pos, a);
 		  :}	
-	|	LPAREN BYTE RPAREN exp:a
+	|	LPAREN BYTE:op RPAREN exp:a
 		  {: 
-			//TODO
-			//NOT SURE HOW TO ADD BYTE CAST AND
-			//EXPRESSION TO AST AT SAME TIME.
+		  	System.out.println("ByteCast: " + a.getClass().getSimpleName());
+			RESULT = new ByteCast(op.line, op.pos, a);;
 		  :}
 	|	INT_LITERAL:i
 		  {:
@@ -349,7 +368,67 @@ exp ::=
 		  :}
 	|	LPAREN exp:a RPAREN
 	 	  {: 
-			RESULT = a;
+	 	  	System.out.println("Expression: " + a.getClass().getSimpleName());
+			if(a instanceof ByteCast){
+				ByteCast b = (ByteCast) a;
+				if(b.getExp() instanceof MulExp){
+					System.out.println("\tFound MulExp");
+					MulExp e = (MulExp) b.getExp();
+					b.setExp(e.getLExp());
+					e.setLExp(b);
+					RESULT = e;
+				}else if(b.getExp() instanceof PlusExp){
+					System.out.println("\tFound PlusExp");
+					PlusExp e = (PlusExp) b.getExp();
+					b.setExp(e.getLExp());
+					e.setLExp(b);
+					RESULT = e;
+				}else if(b.getExp() instanceof MinusExp){
+					System.out.println("\tFound MinusExp");
+					MinusExp e = (MinusExp) b.getExp();
+					b.setExp(e.getLExp());
+					e.setLExp(b);
+					RESULT = e;
+				}else if(b.getExp() instanceof EqualExp){
+					System.out.println("\tFound EqualExp");
+					EqualExp e = (EqualExp) b.getExp();
+					b.setExp(e.getLExp());
+					e.setLExp(b);
+					RESULT = e;
+				}else{
+					RESULT =  a;
+				}
+			}else if(a instanceof NegExp){
+				NegExp n = (NegExp) a;
+				if(n.getExp() instanceof MulExp){
+					System.out.println("\tFound MulExp");
+					MulExp e = (MulExp) n.getExp();
+					n.setExp(e.getLExp());
+					e.setLExp(n);
+					RESULT = e;
+				}else if(n.getExp() instanceof PlusExp){
+					System.out.println("\tFound PlusExp");
+					PlusExp e = (PlusExp) n.getExp();
+					n.setExp(e.getLExp());
+					e.setLExp(n);
+					RESULT = e;
+				}else if(n.getExp() instanceof MinusExp){
+					System.out.println("\tFound MinusExp");
+					MinusExp e = (MinusExp) n.getExp();
+					n.setExp(e.getLExp());
+					e.setLExp(n);
+					RESULT = e;
+				}else if(n.getExp() instanceof EqualExp){
+					System.out.println("\tFound EqualExp");
+					EqualExp e = (EqualExp) n.getExp();
+					n.setExp(e.getLExp());
+					e.setLExp(n);
+					RESULT = e;
+				}else{
+					RESULT =  a;
+				}
+			}else
+				RESULT = a;
 		  :}
 	;
 	
