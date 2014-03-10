@@ -714,7 +714,15 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inMeggyCheckButton(MeggyCheckButton node)
 	{
-		defaultIn(node);
+		Type expType = this.mCurrentST.getExpType(node.getExp());
+		if (expType==Type.BUTTON){
+			this.mCurrentST.setExpType(node, Type.BOOL);
+		} else {
+			throw new SemanticException(
+					"Invalid argument type for method MeggyCheckbutton",
+					node.getExp().getLine(),
+					node.getExp().getPos());
+		}
 	}
 
 	public void outMeggyCheckButton(MeggyCheckButton node)

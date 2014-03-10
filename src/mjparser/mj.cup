@@ -157,7 +157,11 @@ main_class ::=
     ;
     
 statement ::= 
-		MEGGYSETPIXEL:op LPAREN exp:a COMMA	exp:b COMMA	exp:c RPAREN SEMI
+		LBRACE:op statement_list:s RBRACE
+	  	  {:
+			RESULT = new BlockStatement(op.line, op.pos, s);
+		  :}
+	|	MEGGYSETPIXEL:op LPAREN exp:a COMMA	exp:b COMMA	exp:c RPAREN SEMI
 		  {:
 		  	RESULT = new MeggySetPixel(op.line, op.pos, a, b, c); 
 		  :}
