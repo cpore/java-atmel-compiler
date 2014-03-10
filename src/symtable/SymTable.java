@@ -1,8 +1,7 @@
 package symtable;
-import java.util.*;
-import ast.node.*;
+import java.util.HashMap;
 
-import exceptions.InternalException;
+import ast.node.Node;
 
 /** 
  * SymTable

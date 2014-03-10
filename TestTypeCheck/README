@@ -1,0 +1,23 @@
+Create Test cases that cause type errors for the MJ_PA3.jar reference compiler
+and place them in this folder.
+
+From the TestTypeCheck folder, run:
+
+  java -jar MJ_PA3.jar filename.java
+
+to get the output for the error, then
+implement our CheckTypes.java to match the output.
+
+From the root project folder, run:
+  
+  make clean
+  make
+
+To apply changes you've made to CheckTypes.java (yes, you must do make clean first).
+Then, from the TestTypeCheck folder, run:
+
+  java -jar ../MJ.jar filename.java
+
+And compare our output to the reference compiler.
+
+You can check for regressions by running the ./regress.sh script.

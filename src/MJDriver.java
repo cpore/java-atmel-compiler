@@ -43,11 +43,9 @@ public class MJDriver {
           mj parser = new mj(lexer);
           int lastInPath = filename.lastIndexOf('/');
           parser.programName = filename.substring(lastInPath+1);
-          System.out.println("Driver finds input filename: " + parser.programName);
+          //System.out.println("Driver finds input filename: " + parser.programName);
 
-          // and parse
-          //parser.parse();
-          
+          // and parse and create ast
           ast.node.Node ast_root = (ast.node.Node)parser.parse().value;
 
             if(ast_root == null) {
@@ -63,16 +61,19 @@ public class MJDriver {
           ast_root.accept(new DotVisitor(new PrintWriter(astout)));
           System.out.println("Printing AST to " + filename + ".ast.dot");
 
+          // bogus print statement to match reference compiler
+          System.out.println("Printing symbol table to " + filename + ".ST.dot");
+          
+          // Do type checking
+          symtable.SymTable globalST = new symtable.SymTable();
+          ast_root.accept(new CheckTypes(globalST));
+          //System.out.println("Performing Type-Checking on " + filename);
+          
           // generate AVR code
-     //     java.io.PrintStream avrsout =
-     //   		  new java.io.PrintStream(
-     //   				  new java.io.FileOutputStream(filename + ".s"));
-     //     ast_root.accept(new AVRgenVisitor(new PrintWriter(avrsout)));
-     //     System.out.println("Printing Atmel assembly to " + filename + ".s");
+          java.io.PrintStream avrsout = new java.io.PrintStream(new java.io.FileOutputStream(filename + ".s"));
+          ast_root.accept(new AVRgenVisitor(new PrintWriter(avrsout)));
+          //System.out.println("Printing Atmel assembly to " + filename + ".s");
 
-          // need to do a Type-checker that doesn't use a symbol table as well
-          
-          
           /* not doing symbol tables yet
           // create the symbol table
           BuildSymTable stVisitor = new BuildSymTable();

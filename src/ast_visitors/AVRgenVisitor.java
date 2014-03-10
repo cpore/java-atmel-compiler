@@ -5,6 +5,10 @@
  */
 package ast_visitors;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
 import ast.visitor.DepthFirstVisitor;
@@ -973,11 +977,67 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void inProgram(Program node)
 	{
+		// This adds the prolog
+        //System.out.println("Generate prolog using avrH.rtl.s");
+        InputStream mainPrologue=null;
+        BufferedReader reader=null;
+        try {
+            // The syntax for loading a text resource file 
+            // from a jar file here:
+            // http://www.rgagnon.com/javadetails/java-0077.html
+            mainPrologue = this.getClass().getClassLoader().getResourceAsStream("avrH.rtl.s");
+            reader = new BufferedReader(new InputStreamReader(mainPrologue));
+
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+              //System.out.println(line);
+              out.println(line);
+            }
+        } catch ( Exception e2) {
+            e2.printStackTrace();
+        }
+        finally{
+            try{
+                if(mainPrologue!=null)
+                	mainPrologue.close();
+                if(reader!=null)
+                	reader.close();
+                out.flush();
+            }
+            catch (IOException e) {
+               e.printStackTrace();
+            }
+        }
 		defaultIn(node);
 	}
 
 	public void outProgram(Program node)
 	{
+		// This adds the epilog
+        //System.out.println("Generate epilog using avrF.rtl.s");
+        InputStream mainEpilogue=null;
+        BufferedReader reader=null;
+        try {
+            mainEpilogue = this.getClass().getClassLoader().getResourceAsStream("avrF.rtl.s");
+            reader = new BufferedReader(new InputStreamReader(mainEpilogue));
+
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+              out.println(line);
+            }
+        } catch ( Exception e2) {
+            e2.printStackTrace();
+        }
+        finally{
+            try{
+                if(mainEpilogue!=null) mainEpilogue.close();
+                if(reader!=null) reader.close();
+                out.flush();
+            }
+            catch (IOException e) {
+               e.printStackTrace();
+            }
+        }
 		defaultOut(node);
 	}
 

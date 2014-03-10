@@ -23,16 +23,15 @@ src/mjparser/mj.class
 src/mjparser/sym.class
 
 #ignore generated source files
-CupTestCases/*.s
 CupTestCases/*.class
 CupTestCases/mjsimPictures
 
-TestCasesMeggy/*.s
 TestCasesMeggy/mjsimPictures
 TestCasesMeggy/output.log
 TestCasesMeggy/t1
 TestCasesMeggy/t2
 TestCasesMeggy/*.class
+TestTypeCheck/*.class
 
 src/ast/node/*.class
 src/ast/visitor/*.class
@@ -47,6 +46,7 @@ src/ast_visitors/*.class
 *~
 
 #misc
+*.s
 *.dot
 *.png
 PA3Start.tar.gz
