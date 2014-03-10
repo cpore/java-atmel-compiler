@@ -159,21 +159,24 @@ main_class ::=
 statement ::= 
 		LBRACE:op statement_list:s RBRACE
 	  	  {:
-			RESULT = new BlockStatement(op.line, op.pos, s);
+			if(s != null)
+				RESULT = new BlockStatement(op.line, op.pos, s);
+			else
+				RESULT = new BlockStatement(op.line, op.pos, new LinkedList<IStatement>());
 		  :}
-	|	MEGGYSETPIXEL:op LPAREN exp:a COMMA	exp:b COMMA	exp:c RPAREN SEMI
+	|	MEGGYSETPIXEL LPAREN:op exp:a COMMA	exp:b COMMA	exp:c RPAREN SEMI
 		  {:
 		  	RESULT = new MeggySetPixel(op.line, op.pos, a, b, c); 
 		  :}
-	|	MEGGYDELAY:op LPAREN exp:a RPAREN SEMI
+	|	MEGGYDELAY LPAREN:op exp:a RPAREN SEMI
 		  {:
 		  	RESULT = new MeggyDelay(op.line, op.pos, a);
 		  :}
 	|	IF:op LPAREN exp:a RPAREN statement:s
 		  {:
 		  	//System.out.println("If Expression: " + a.getClass().getSimpleName());
-            //ELSE statement is just a bogus statement
-		  	RESULT = new IfStatement(op.line, op.pos, a, s, new MeggyDelay(0,0, null));
+            //ELSE statement is just a bogus empty block statement
+		  	RESULT = new IfStatement(op.line, op.pos, a, s, new BlockStatement(op.line, op.pos, new LinkedList<IStatement>()));
 		  :}
 	|	IF:op LPAREN exp:a RPAREN statement:s1 ELSE statement:s2
 		  {:
@@ -196,8 +199,10 @@ statement_list ::=
 		  :}
 	|	statement:s
 		  {:
+		  	
 			LinkedList<IStatement> list = new LinkedList<IStatement>();
-            list.add(s);
+            if(s != null)
+            	list.add(s);
             RESULT = list;
 		  :}
 	;

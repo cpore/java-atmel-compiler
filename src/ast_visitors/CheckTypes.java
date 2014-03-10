@@ -216,7 +216,8 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outBlockStatement(BlockStatement node)
 	{
-		defaultOut(node);
+		// Do Nothing?
+		//defaultOut(node);
 	}
 
 	@Override
@@ -235,12 +236,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inBoolType(BoolType node)
 	{
-		mCurrentST.setExpType(node, Type.BOOL);
+		defaultIn(node);
 	}
 
 	public void outBoolType(BoolType node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.BOOL);
 	}
 
 	@Override
@@ -252,12 +253,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inButtonExp(ButtonLiteral node)
 	{
-		mCurrentST.setExpType(node, Type.BUTTON);
+		defaultIn(node);
 	}
 
 	public void outButtonExp(ButtonLiteral node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.BUTTON);
 	}
 
 	@Override
@@ -269,12 +270,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inButtonType(ButtonType node)
 	{
-		mCurrentST.setExpType(node, Type.BUTTON);
+		defaultIn(node);
 	}
 
 	public void outButtonType(ButtonType node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.BUTTON);
 	}
 
 	@Override
@@ -293,14 +294,14 @@ public class CheckTypes extends DepthFirstVisitor
 	{
 		Type expType = this.mCurrentST.getExpType(node.getExp());
 		if ((expType==Type.INT  || expType==Type.BYTE)){
-			this.mCurrentST.setExpType(node, Type.INT);
+			this.mCurrentST.setExpType(node, Type.BYTE);
 		} else {
 			throw new SemanticException(
 					"Can only cast a byte or int into a byte type, " + this.mCurrentST.getExpType(node.getExp()),
 					node.getExp().getLine(),
 					node.getExp().getPos());
 		}
-		
+
 	}
 
 	@Override
@@ -316,12 +317,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inByteType(ByteType node)
 	{
-		mCurrentST.setExpType(node, Type.BYTE);
+		defaultIn(node);
 	}
 
 	public void outByteType(ByteType node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.BYTE);
 	}
 
 	@Override
@@ -437,12 +438,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inColorExp(ColorLiteral node)
 	{
-		mCurrentST.setExpType(node, Type.COLOR);
+		defaultIn(node);
 	}
 
 	public void outColorExp(ColorLiteral node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.COLOR);
 	}
 
 	@Override
@@ -470,12 +471,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inColorType(ColorType node)
 	{
-		mCurrentST.setExpType(node, Type.COLOR);
+		defaultIn(node);
 	}
 
 	public void outColorType(ColorType node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.COLOR);
 	}
 
 	public void visitColorType(ColorType node)
@@ -486,12 +487,28 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inEqualExp(EqualExp node)
 	{
-		mCurrentST.setExpType(node, Type.BOOL);
+		defaultIn(node);
 	}
 
 	public void outEqualExp(EqualExp node)
 	{
-		defaultOut(node);
+		Type lexpType = this.mCurrentST.getExpType(node.getLExp());
+		Type rexpType = this.mCurrentST.getExpType(node.getRExp());
+		if ((lexpType==Type.INT  || lexpType==Type.BYTE) &&
+				(rexpType==Type.INT  || rexpType==Type.BYTE)){
+			this.mCurrentST.setExpType(node, Type.BOOL);
+		}else if(lexpType==Type.BOOL && rexpType==Type.BOOL){
+			this.mCurrentST.setExpType(node, Type.BOOL);
+		}else if(lexpType==Type.COLOR && rexpType==Type.COLOR){
+			this.mCurrentST.setExpType(node, Type.BOOL);
+		}else {
+
+			throw new SemanticException(
+					"Mixed operands to == operator must be of numeric types",
+					node.getLExp().getLine(),
+					node.getLExp().getPos());
+		}
+
 	}
 
 	@Override
@@ -512,12 +529,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inFalseExp(FalseLiteral node)
 	{
-		mCurrentST.setExpType(node, Type.BOOL);
+		defaultIn(node);
 	}
 
 	public void outFalseExp(FalseLiteral node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.BOOL);
 	}
 
 	@Override
@@ -572,7 +589,8 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outIfStatement(IfStatement node)
 	{
-		defaultOut(node);
+		//Nothing to do?
+		//defaultOut(node);
 	}
 
 	@Override
@@ -613,12 +631,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inIntegerExp(IntLiteral node)
 	{
-		mCurrentST.setExpType(node, Type.INT);
+		defaultIn(node);
 	}
 
 	public void outIntegerExp(IntLiteral node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.INT);
 	}
 
 	@Override
@@ -630,12 +648,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inIntType(IntType node)
 	{
-		mCurrentST.setExpType(node, Type.INT);
+		defaultIn(node);
 	}
 
 	public void outIntType(IntType node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.INT);
 	}
 
 	@Override
@@ -698,7 +716,8 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outMainClass(MainClass node)
 	{
-		defaultOut(node);
+		//Nothing to do?
+		//defaultOut(node);
 	}
 
 	@Override
@@ -714,20 +733,20 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inMeggyCheckButton(MeggyCheckButton node)
 	{
+		defaultIn(node);
+	}
+
+	public void outMeggyCheckButton(MeggyCheckButton node)
+	{
 		Type expType = this.mCurrentST.getExpType(node.getExp());
 		if (expType==Type.BUTTON){
 			this.mCurrentST.setExpType(node, Type.BOOL);
 		} else {
 			throw new SemanticException(
-					"Invalid argument type for method MeggyCheckbutton",
+					"Invalid argument type for method MeggyCheckButton",
 					node.getExp().getLine(),
 					node.getExp().getPos());
 		}
-	}
-
-	public void outMeggyCheckButton(MeggyCheckButton node)
-	{
-		defaultOut(node);
 	}
 
 	public void visitMeggyCheckButton(MeggyCheckButton node)
@@ -747,7 +766,15 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outMeggyDelay(MeggyDelay node)
 	{
-		defaultOut(node);
+		Type expType = this.mCurrentST.getExpType(node.getExp());
+		if (expType==Type.INT){
+			this.mCurrentST.setExpType(node, Type.VOID);
+		} else {
+			throw new SemanticException(
+					"Invalid argument type for method MeggyDelay",
+					node.getExp().getLine(),
+					node.getExp().getPos());
+		}
 	}
 
 	public void visitMeggyDelay(MeggyDelay node)
@@ -767,7 +794,22 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outMeggyGetPixel(MeggyGetPixel node)
 	{
-		defaultOut(node);
+		Type XexpType = this.mCurrentST.getExpType(node.getXExp());
+		Type YexpType = this.mCurrentST.getExpType(node.getYExp());
+		if (XexpType!=Type.BYTE){
+			throw new SemanticException(
+					"Invalid argument type for method MeggyGetPixel",
+					node.getXExp().getLine(),
+					node.getXExp().getPos());
+		}
+		if(YexpType!=Type.BYTE) {
+			throw new SemanticException(
+					"Invalid argument type for method MeggyGetPixel",
+					node.getYExp().getLine(),
+					node.getYExp().getPos());
+
+		}
+		this.mCurrentST.setExpType(node, Type.COLOR);
 	}
 
 	public void visitMeggyGetPixel(MeggyGetPixel node)
@@ -813,7 +855,30 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outMeggySetPixel(MeggySetPixel node)
 	{
-		defaultOut(node);
+		Type XexpType = this.mCurrentST.getExpType(node.getXExp());
+		Type YexpType = this.mCurrentST.getExpType(node.getYExp());
+		Type CexpType = this.mCurrentST.getExpType(node.getColor());
+		if(XexpType!=Type.BYTE){
+			throw new SemanticException(
+					"Invalid argument type for method MeggySetPixel",
+					node.getXExp().getLine(),
+					node.getXExp().getPos());
+		}
+		if(YexpType!=Type.BYTE) {
+			throw new SemanticException(
+					"Invalid argument type for method MeggySetPixel",
+					node.getYExp().getLine(),
+					node.getYExp().getPos());
+
+		}
+		if(CexpType!=Type.COLOR) {
+			throw new SemanticException(
+					"Invalid argument type for method MeggySetPixel",
+					node.getColor().getLine(),
+					node.getColor().getPos());
+
+		}
+		this.mCurrentST.setExpType(node, Type.VOID);
 	}
 
 	public void visitMeggySetPixel(MeggySetPixel node)
@@ -909,12 +974,23 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inMinusExp(MinusExp node)
 	{
-		mCurrentST.setExpType(node, Type.INT);
+		defaultIn(node);
 	}
 
 	public void outMinusExp(MinusExp node)
 	{
-		defaultOut(node);
+		Type lexpType = this.mCurrentST.getExpType(node.getLExp());
+		Type rexpType = this.mCurrentST.getExpType(node.getRExp());
+		if ((lexpType==Type.INT  || lexpType==Type.BYTE) &&
+				(rexpType==Type.INT  || rexpType==Type.BYTE)
+				){
+			this.mCurrentST.setExpType(node, Type.INT);
+		} else {
+			throw new SemanticException(
+					"Operands to - operator must be INT or BYTE",
+					node.getLExp().getLine(),
+					node.getLExp().getPos());
+		}
 	}
 
 	@Override
@@ -934,12 +1010,28 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inMulExp(MulExp node)
 	{
-		mCurrentST.setExpType(node, Type.INT);
+		defaultIn(node);
 	}
 
 	public void outMulExp(MulExp node)
 	{
-		defaultOut(node);
+		Type lexpType = this.mCurrentST.getExpType(node.getLExp());
+		Type rexpType = this.mCurrentST.getExpType(node.getRExp());
+
+		if(lexpType!=Type.BYTE){
+			throw new SemanticException(
+					"Invalid left operand type for operator *",
+					node.getLExp().getLine(),
+					node.getLExp().getPos());
+		}
+		if(rexpType!=Type.BYTE) {
+			throw new SemanticException(
+					"Invalid right operand type for operator *",
+					node.getRExp().getLine(),
+					node.getRExp().getPos());
+
+		}	
+		this.mCurrentST.setExpType(node, Type.INT);
 	}
 
 	@Override
@@ -1001,12 +1093,20 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inNegExp(NegExp node)
 	{
-		mCurrentST.setExpType(node, Type.INT);
+		defaultIn(node);
 	}
 
 	public void outNegExp(NegExp node)
 	{
-		defaultOut(node);
+		Type expType = this.mCurrentST.getExpType(node.getExp());
+		if (expType==Type.INT || expType==Type.BYTE){
+			this.mCurrentST.setExpType(node, Type.INT);
+		} else {
+			throw new SemanticException(
+					"Invalid operand type for operator UMINUS",
+					node.getExp().getLine(),
+					node.getExp().getPos());
+		}
 	}
 
 	@Override
@@ -1022,12 +1122,20 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inNotExp(NotExp node)
 	{
-		mCurrentST.setExpType(node, Type.BOOL);
+		defaultIn(node);
 	}
 
 	public void outNotExp(NotExp node)
 	{
-		defaultOut(node);
+		Type expType = this.mCurrentST.getExpType(node.getExp());
+		if (expType==Type.BOOL){
+			this.mCurrentST.setExpType(node, Type.BOOL);
+		} else {
+			throw new SemanticException(
+					"Invalid operand type for operator !",
+					node.getExp().getLine(),
+					node.getExp().getPos());
+		}
 	}
 
 	@Override
@@ -1043,7 +1151,7 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inPlusExp(PlusExp node)
 	{
-		mCurrentST.setExpType(node, Type.INT);
+		defaultIn(node);
 	}
 
 	public void outPlusExp(PlusExp node)
@@ -1085,7 +1193,8 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outProgram(Program node)
 	{
-		defaultOut(node);
+		// Do nothing?
+		//defaultOut(node);
 	}
 
 	@Override
@@ -1191,12 +1300,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inTrueExp(TrueLiteral node)
 	{
-		mCurrentST.setExpType(node, Type.BOOL);
+		defaultIn(node);
 	}
 
 	public void outTrueExp(TrueLiteral node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.BOOL);
 	}
 
 	@Override
@@ -1229,12 +1338,12 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void inVoidType(VoidType node)
 	{
-		mCurrentST.setExpType(node, Type.VOID);
+		defaultIn(node);
 	}
 
 	public void outVoidType(VoidType node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.VOID);
 	}
 
 	@Override
@@ -1251,7 +1360,8 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outWhileStatement(WhileStatement node)
 	{
-		defaultOut(node);
+		// Do nothing?
+		//defaultOut(node);
 	}
 
 	@Override
