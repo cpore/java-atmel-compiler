@@ -228,6 +228,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		{
 			node.getExp().accept(this);
 		}
+		out.println("    # Casting int to byte by popping");
+		out.println("    # 2 bytes off stack and only pushing low order bits");
+		out.println("    # back on.  Low order bits are on top of stack.");
+		out.println("    pop    r24");
+		out.println("    pop    r25");
+		out.println("    push   r24");
+		out.println();
+		out.flush();
 		outByteCast(node);
 	}
 
@@ -365,7 +373,16 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	@Override
 	public void visitColorLiteral(ColorLiteral node)
 	{
+		
+		// This code assumes that node.getIntValue() will fit into
+		// A byte. Do we need to check for this in the type checker?
 		inColorExp(node);
+		out.println("    # Load Color expression from Symbol");
+		out.println("    ldi    r24,lo8("+node.getIntValue()+")");
+		out.println("    # push two byte expression onto stack");
+		out.println("    push   r24");
+		out.println();
+		out.flush();
 		outColorExp(node);
 	}
 
@@ -535,7 +552,15 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outIntegerExp(IntLiteral node)
 	{
-		defaultOut(node);
+		out.println("    # Load constant int from Symbol");
+		out.println("    ldi    r24,lo8("+node.getIntValue()+")");
+		out.println("    ldi    r25,hi8("+node.getIntValue()+")");
+		out.println("    # push two byte expression onto stack");
+		out.println("    push   r25");
+		out.println("    push   r24");
+		out.println();
+		out.flush();
+		//defaultOut(node);
 	}
 
 	@Override
@@ -722,7 +747,18 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMeggySetPixel(MeggySetPixel node)
 	{
-		defaultOut(node);
+		out.println("    ### Meggy.setPixel(x,y,color) call");
+	  	out.println("    # load a one byte expression off stack");
+	  	out.println("    pop    r20");
+	  	out.println("    # load a one byte expression off stack");
+	  	out.println("    pop    r22");
+	  	out.println("    # load a one byte expression off stack");
+	  	out.println("    pop    r24");
+	  	out.println("    call   _Z6DrawPxhhh");
+	  	out.println("    call   _Z12DisplaySlatev");
+	  	out.println();
+	  	out.flush();
+		//defaultOut(node);
 	}
 
 	public void visitMeggySetPixel(MeggySetPixel node)
