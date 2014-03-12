@@ -42,7 +42,12 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outAndExp(AndExp node)
 	{
-		defaultOut(node);
+
+        out.println("pop R24 #left");
+        out.println("pop R26 #right");
+        out.println("and R24,R26 # R26 = R24 && R2");
+        out.flush();
+
 	}
 
 	@Override
