@@ -27,7 +27,7 @@ public class Label  {
    * Makes a new label with an arbitrary name.
    */
    public Label() {
-    this("MJ_L" + count++);
+	   this("MJ_L" + count++);
    }
     
 }

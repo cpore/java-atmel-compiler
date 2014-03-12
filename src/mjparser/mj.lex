@@ -54,7 +54,7 @@ EOL=(\r|\n|\r\n)
 "]"         {return new Symbol(sym.RBRACKET,new SymbolValue(yyline+1, yychar+1, yytext()));}
 "."         {return new Symbol(sym.DOT,new SymbolValue(yyline+1, yychar+1, yytext()));}
 
-"main"  	{return new Symbol(sym.MAIN,new SymbolValue(yyline+1, yychar+1, yytext()));}
+"main"  	  {return new Symbol(sym.MAIN,new SymbolValue(yyline+1, yychar+1, yytext()));}
 "boolean"   {return new Symbol(sym.BOOLEAN,new SymbolValue(yyline+1, yychar+1, yytext()));}
 "int"       {return new Symbol(sym.INT,new SymbolValue(yyline+1, yychar+1, yytext()));}
 "byte"      {return new Symbol(sym.BYTE,new SymbolValue(yyline+1, yychar+1, yytext()));}
@@ -96,7 +96,7 @@ EOL=(\r|\n|\r\n)
 "Meggy.Button.Up"     	{return new Symbol(sym.BUTTON_LITERAL,new SymbolValue(yyline+1, yychar+1, yytext(), 4));}
 "Meggy.Button.Down"   	{return new Symbol(sym.BUTTON_LITERAL,new SymbolValue(yyline+1, yychar+1, yytext(), 8));}
 "Meggy.Button.Left"   	{return new Symbol(sym.BUTTON_LITERAL,new SymbolValue(yyline+1, yychar+1, yytext(), 16));}
-"Meggy.Button.Right"	{return new Symbol(sym.BUTTON_LITERAL,new SymbolValue(yyline+1, yychar+1, yytext(), 32));}
+"Meggy.Button.Right"	  {return new Symbol(sym.BUTTON_LITERAL,new SymbolValue(yyline+1, yychar+1, yytext(), 32));}
 "Meggy.Tone.C3"       	{return new Symbol(sym.TONE_LITERAL,new SymbolValue(yyline+1, yychar+1, yytext(), 61157));}
 "Meggy.Tone.Cs3"      	{return new Symbol(sym.TONE_LITERAL,new SymbolValue(yyline+1, yychar+1, yytext(), 57724));}
 "Meggy.Tone.D3"       	{return new Symbol(sym.TONE_LITERAL,new SymbolValue(yyline+1, yychar+1, yytext(), 54485));}

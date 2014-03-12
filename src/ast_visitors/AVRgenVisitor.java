@@ -16,9 +16,10 @@ import ast.node.*;
 
 import java.util.*;
 
+import label.Label;
+
 public class AVRgenVisitor extends DepthFirstVisitor {
 	private PrintWriter out;
-
 
 	/** Constructor takes a PrintWriter, and stores in instance var. */
 	public AVRgenVisitor(PrintWriter out) {
@@ -183,7 +184,17 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outButtonExp(ButtonLiteral node)
 	{
-		defaultOut(node);
+		// I think buttons are the only thing that don't go
+		// on the stack.
+		/*
+		// This code assumes that node.getIntValue() will fit into
+		// A byte. Do we need to check for this in the type checker?
+		out.println("    # Load Button expression from Symbol");
+		out.println("    ldi    r24, " + node.getIntValue());
+		out.println("    # push one byte expression onto stack");
+		out.println("    push   r24");
+		out.println();
+		out.flush();*/
 	}
 
 	@Override
@@ -217,7 +228,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outByteCast(ByteCast node)
 	{
-		defaultOut(node);
+		out.println("    # Casting int to byte by popping");
+		out.println("    # 2 bytes off stack and only pushing low order bits");
+		out.println("    # back on.  Low order bits are on top of stack.");
+		out.println("    pop    r24");
+		out.println("    pop    r25");
+		out.println("    push   r24");
+		out.println();
+		out.flush();
 	}
 
 	@Override
@@ -228,14 +246,6 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		{
 			node.getExp().accept(this);
 		}
-		out.println("    # Casting int to byte by popping");
-		out.println("    # 2 bytes off stack and only pushing low order bits");
-		out.println("    # back on.  Low order bits are on top of stack.");
-		out.println("    pop    r24");
-		out.println("    pop    r25");
-		out.println("    push   r24");
-		out.println();
-		out.flush();
 		outByteCast(node);
 	}
 
@@ -367,22 +377,22 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outColorExp(ColorLiteral node)
 	{
-		defaultOut(node);
+		// This code assumes that node.getIntValue() will fit into
+		// A byte. Do we need to check for this in the type checker?
+		out.println("    # Load Color expression from Symbol");
+		out.println("    ldi    r24, " + node.getIntValue());
+		out.println("    # push two byte expression onto stack");
+		out.println("    push   r24");
+		out.println();
+		out.flush();
 	}
 
 	@Override
 	public void visitColorLiteral(ColorLiteral node)
 	{
-		
-		// This code assumes that node.getIntValue() will fit into
-		// A byte. Do we need to check for this in the type checker?
+
 		inColorExp(node);
-		out.println("    # Load Color expression from Symbol");
-		out.println("    ldi    r24,lo8("+node.getIntValue()+")");
-		out.println("    # push two byte expression onto stack");
-		out.println("    push   r24");
-		out.println();
-		out.flush();
+
 		outColorExp(node);
 	}
 
@@ -451,6 +461,12 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outFalseExp(FalseLiteral node)
 	{
+		out.println("    # Load false/0 expression");
+		out.println("    ldi    r24, " + node.getIntValue());
+		out.println("    # push one byte expression onto stack");
+		out.println("    push   r24");
+		out.println();
+		out.flush();
 		defaultOut(node);
 	}
 
@@ -512,20 +528,54 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	@Override
 	public void visitIfStatement(IfStatement node)
 	{
+		//Get necessary labels
+		String thenLbl = new Label().toString();
+		String elseLbl = new Label().toString();
+
 		inIfStatement(node);
+
+		out.println("    #### if statement");
+		out.println();
+		// get test expression
 		if(node.getExp() != null)
 		{
 			node.getExp().accept(this);
 		}
+		out.println("    # load condition and branch if false");
+		out.println("    # load a one byte expression off stack");
+		out.println("    pop    r24");
+		out.println("    #load zero into reg");
+		out.println("    ldi    r25, 0");
+		out.println();
+
+		out.println("    #use cp to set SREG");
+		out.println("    cp     r24, r25");
+		out.println("    #WANT breq " + elseLbl);
+		out.println("    brne   " + thenLbl);
+		out.println("    jmp    " + elseLbl);
+		out.println();
+
+		out.println("    # then label for if");
+		out.println(thenLbl + ":");
+		out.println();
+		//write then code
 		if(node.getThenStatement() != null)
 		{
 			node.getThenStatement().accept(this);
 		}
+
+		out.println("    # else label for if");
+		out.println(elseLbl + ":");
+		out.println();
+		//write else code
 		if(node.getElseStatement() != null)
 		{
 			node.getElseStatement().accept(this);
 		}
+
+		out.flush();
 		outIfStatement(node);
+
 	}
 
 	public void inIntArrayType(IntArrayType node)
@@ -661,7 +711,42 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMeggyCheckButton(MeggyCheckButton node)
 	{
-		defaultOut(node);
+		//Setup our labels
+		String ifZeroLbl = new Label().toString();
+		String ifOneLbl = new Label().toString();
+		String jmpPastZeroLbl = new Label().toString();
+		// Check button is special case where we need
+		// to examine the child nodes, do not use the stack
+		
+		String buttonValue = node.getExp().toString();
+		if(buttonValue.equals("Meggy.Button.Up"))
+			buttonValue = "Button_Up";
+		else if(buttonValue.equals("Meggy.Button.Down"))
+			buttonValue = "Button_Down";
+		else if(buttonValue.equals("Meggy.Button.Left"))
+			buttonValue = "Button_Left";
+		else if(buttonValue.equals("Meggy.Button.Right"))
+			buttonValue = "Button_Right";
+		else if(buttonValue.equals("Meggy.Button.A"))
+			buttonValue = "Button_A";
+		else if(buttonValue.equals("Meggy.Button.B"))
+			buttonValue = "Button_B";
+
+		out.println("    ### MeggyCheckButton");
+		out.println("    call     _Z16CheckButtonsDownv");
+		out.println("    # pop button value off stack");
+		out.println("    lds    r24, " + buttonValue);
+		out.println("    # if button value is zero, push 0 else push 1");
+		out.println("    tst    r24");
+		out.println("    breq   " + ifZeroLbl);
+		out.println(ifOneLbl + ":");
+		out.println("    ldi    r24, 1");
+		out.println("    jmp    " + jmpPastZeroLbl);
+		out.println(ifZeroLbl + ":");
+		out.println(jmpPastZeroLbl + ":");
+		out.println("    # push one byte expression onto stack");
+		out.println("    push   r24");
+		out.flush();
 	}
 
 	public void visitMeggyCheckButton(MeggyCheckButton node)
@@ -681,7 +766,13 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMeggyDelay(MeggyDelay node)
 	{
-		defaultOut(node);
+		out.println("    ### Meggy.delay() call");
+		out.println("    # load delay parameter");
+		out.println("    # load a two byte expression off stack");
+		out.println("    pop    r24");
+		out.println("    pop    r25");
+		out.println("    call _Z8delay_msj");
+		out.flush();
 	}
 
 	public void visitMeggyDelay(MeggyDelay node)
@@ -701,7 +792,25 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMeggyGetPixel(MeggyGetPixel node)
 	{
-		defaultOut(node);
+		// TODO find the proper call for ReadPx and find out
+		// which register the result is stored in.
+		
+		out.println("    ### Meggy.getPixel(x,y) call");
+		out.println("    # load a one byte expression off stack");
+		out.println("    pop    r22");
+		out.println("    # load a one byte expression off stack");
+		out.println("    pop    r24");
+		//I don't know if this is the correct call
+		//I based it off of _Z6DrawPxhhh
+		out.println("    call   _Z6ReadPxhh");
+		out.println("    call   _Z12DisplaySlatev");
+		// we need to push the result onto the stack
+		// I don't know which register holds the result
+		// I took a guess with r24
+		out.println("    # push one byte color expression onto stack");
+		out.println("    push   r24");
+		out.println();
+		out.flush();
 	}
 
 	public void visitMeggyGetPixel(MeggyGetPixel node)
@@ -748,17 +857,16 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void outMeggySetPixel(MeggySetPixel node)
 	{
 		out.println("    ### Meggy.setPixel(x,y,color) call");
-	  	out.println("    # load a one byte expression off stack");
-	  	out.println("    pop    r20");
-	  	out.println("    # load a one byte expression off stack");
-	  	out.println("    pop    r22");
-	  	out.println("    # load a one byte expression off stack");
-	  	out.println("    pop    r24");
-	  	out.println("    call   _Z6DrawPxhhh");
-	  	out.println("    call   _Z12DisplaySlatev");
-	  	out.println();
-	  	out.flush();
-		//defaultOut(node);
+		out.println("    # load a one byte expression off stack");
+		out.println("    pop    r20");
+		out.println("    # load a one byte expression off stack");
+		out.println("    pop    r22");
+		out.println("    # load a one byte expression off stack");
+		out.println("    pop    r24");
+		out.println("    call   _Z6DrawPxhhh");
+		out.println("    call   _Z12DisplaySlatev");
+		out.println();
+		out.flush();
 	}
 
 	public void visitMeggySetPixel(MeggySetPixel node)
@@ -1014,66 +1122,68 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void inProgram(Program node)
 	{
 		// This adds the prolog
-        //System.out.println("Generate prolog using avrH.rtl.s");
-        InputStream mainPrologue=null;
-        BufferedReader reader=null;
-        try {
-            // The syntax for loading a text resource file 
-            // from a jar file here:
-            // http://www.rgagnon.com/javadetails/java-0077.html
-            mainPrologue = this.getClass().getClassLoader().getResourceAsStream("avrH.rtl.s");
-            reader = new BufferedReader(new InputStreamReader(mainPrologue));
+		//System.out.println("Generate prolog using avrH.rtl.s");
+		InputStream mainPrologue=null;
+		BufferedReader reader=null;
+		try {
+			// The syntax for loading a text resource file 
+			// from a jar file here:
+			// http://www.rgagnon.com/javadetails/java-0077.html
+			mainPrologue = this.getClass().getClassLoader().getResourceAsStream("avrH.rtl.s");
+			reader = new BufferedReader(new InputStreamReader(mainPrologue));
 
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-              //System.out.println(line);
-              out.println(line);
-            }
-        } catch ( Exception e2) {
-            e2.printStackTrace();
-        }
-        finally{
-            try{
-                if(mainPrologue!=null)
-                	mainPrologue.close();
-                if(reader!=null)
-                	reader.close();
-                out.flush();
-            }
-            catch (IOException e) {
-               e.printStackTrace();
-            }
-        }
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				//System.out.println(line);
+				out.println(line);
+			}
+			out.println();
+		} catch ( Exception e2) {
+			e2.printStackTrace();
+		}
+		finally{
+			try{
+				if(mainPrologue!=null)
+					mainPrologue.close();
+				if(reader!=null)
+					reader.close();
+				out.flush();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		defaultIn(node);
 	}
 
 	public void outProgram(Program node)
 	{
 		// This adds the epilog
-        //System.out.println("Generate epilog using avrF.rtl.s");
-        InputStream mainEpilogue=null;
-        BufferedReader reader=null;
-        try {
-            mainEpilogue = this.getClass().getClassLoader().getResourceAsStream("avrF.rtl.s");
-            reader = new BufferedReader(new InputStreamReader(mainEpilogue));
+		//System.out.println("Generate epilog using avrF.rtl.s");
+		InputStream mainEpilogue=null;
+		BufferedReader reader=null;
+		try {
+			mainEpilogue = this.getClass().getClassLoader().getResourceAsStream("avrF.rtl.s");
+			reader = new BufferedReader(new InputStreamReader(mainEpilogue));
 
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-              out.println(line);
-            }
-        } catch ( Exception e2) {
-            e2.printStackTrace();
-        }
-        finally{
-            try{
-                if(mainEpilogue!=null) mainEpilogue.close();
-                if(reader!=null) reader.close();
-                out.flush();
-            }
-            catch (IOException e) {
-               e.printStackTrace();
-            }
-        }
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				out.println(line);
+			}
+			out.println();
+		} catch ( Exception e2) {
+			e2.printStackTrace();
+		}
+		finally{
+			try{
+				if(mainEpilogue!=null) mainEpilogue.close();
+				if(reader!=null) reader.close();
+				out.flush();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		defaultOut(node);
 	}
 
@@ -1185,6 +1295,13 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outTrueExp(TrueLiteral node)
 	{
+		out.println("    # Load True/1 expression");
+		out.println("    ldi    r24, " + node.getIntValue());
+		out.println("    # push one byte expression onto stack");
+		out.println("    push   r24");
+		out.println();
+		out.flush();
+
 		defaultOut(node);
 	}
 
@@ -1246,15 +1363,48 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	@Override
 	public void visitWhileStatement(WhileStatement node)
 	{
+		//Get necessary labels
+		String whileTestLbl = new Label().toString();
+		String whileBodyLbl = new Label().toString();
+		String whileExitLbl = new Label().toString();
 		inWhileStatement(node);
 		if(node.getExp() != null)
 		{
 			node.getExp().accept(this);
 		}
+		//After we get the expression, there will be a bool
+		//on the stack that we can test
+		out.println("    #### while statement");
+		out.println(whileTestLbl + ":");
+		out.println();
+
+		out.println("    # if not(condition)");
+		out.println("    # load a one byte expression off stack");
+		out.println("    pop    r24");
+		out.println("    ldi    r25,0");
+		out.println("    cp     r24, r25");
+		out.println("    # WANT breq " + whileExitLbl);
+		out.println("    brne   " + whileBodyLbl);
+		out.println("    jmp    MJ_L2");
+		out.println();
+
+		out.println("    # while loop body");
+		out.println(whileBodyLbl + ":");
+		out.println();
+
+		// This will add AVR code for all the statements in the while block
 		if(node.getStatement() != null)
 		{
 			node.getStatement().accept(this);
 		}
+
+		out.println("    # jump to while test");
+		out.println("    jmp    " + whileTestLbl);
+		out.println();
+
+		out.println("    # end of while");
+		out.println(whileExitLbl + ":");
+
 		outWhileStatement(node);
 	}
 

@@ -36,6 +36,6 @@ do
     echo "============================="
 done
 
-#createPng
+createPng
 # clean up the files afterwards
-rm t1 t2 *.s *.png *.class *.dot
+rm t1 t2 #*.s *.png *.class *.dot
