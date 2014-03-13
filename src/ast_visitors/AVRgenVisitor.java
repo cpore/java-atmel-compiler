@@ -43,10 +43,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outAndExp(AndExp node)
 	{
-
-        out.println("pop R24 #left");
-        out.println("pop R26 #right");
-        out.println("and R24,R26 # R26 = R24 && R2");
+        //TODO Check width issue.
+        out.println("    #left");
+        out.println("    pop R24");
+        out.println("    #right");
+        out.println("    pop R26");
+        out.println("    #R26 = R24 && R26");
+        out.println("    and R24,R26");
+        out.println("    push R24");//Push result.
         out.flush();
 
 	}
@@ -440,7 +444,22 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outEqualExp(EqualExp node)
 	{
-		defaultOut(node);
+        //TODO Check for longer than byte variable.
+        //To handle it use sub and sbc (subtract with carry)
+        //We still need this however to handle shorter variables
+        //as they will only have two pushes and thus no extra data.
+        out.println("    #get the values");
+        out.println("    pop R24");
+        out.println("    pop R26");
+        out.println("    sub R24,R26");
+		out.println("    #Branch if equals");//Aka Z = 0;
+        out.println("    breq 2");//Jump 2 + 1 if true.
+        out.println("    push 0");//push False
+        out.println("    rjmp 1");//Skip the push
+        out.println("    push 1");//push true
+        out.println();//Done
+        //The next command will pop to read the value.
+        out.flush();
 	}
 
 	@Override
@@ -812,6 +831,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		// we need to push the result onto the stack
 		// I don't know which register holds the result
 		// I took a guess with r24
+        // Based on what I have read this is correct.
 		out.println("    # push one byte color expression onto stack");
 		out.println("    push   r24");
 		out.println();
@@ -972,7 +992,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMinusExp(MinusExp node)
 	{
-		defaultOut(node);
+        //TODO Need types for sizes.
+        out.println("    #Subtract");
+        out.println("    pop R24");//Second argument
+        out.println("    pop R26");//First argument
+        out.println("    sub R26,24");
+        out.println("    push R6");//Result goes to R6 (first arg)
+        out.println();
+        out.flush();
 	}
 
 	@Override
@@ -997,7 +1024,16 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMulExp(MulExp node)
 	{
-		defaultOut(node);
+		//Only allowed to use bytes.
+        //TODO Need to know if bytes are signed or not.
+        //For now we will expect all bytes to be signed.
+        out.println("    pop R24");//Multiplier (aka second argument)
+        out.println("    pop R26");//Multiplicand (aka first argument)
+        out.println("    muls R26,R24");
+        out.println("    push R0");//Result goes to R0:R1
+        out.println("    push R1");//Returns an int. (16 bits or two bytes)
+        out.println();
+        out.flush();
 	}
 
 	@Override
@@ -1064,7 +1100,13 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outNegExp(NegExp node)
 	{
-		defaultOut(node);
+        //TODO has width issue.
+        //Gets complicated when dealing with values larger than a byte.
+		out.println("    pop r24");
+        out.println("    neg r24");
+        out.println("    push r24");
+        out.println();
+        out.flush();
 	}
 
 	@Override
@@ -1085,7 +1127,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outNotExp(NotExp node)
 	{
-		defaultOut(node);
+        //TODO this might be wrong and might have width issues.
+		out.println("    pop R24");//Get value
+        out.println("    sbr R26,0");//R6 = 0;
+        out.println("    dec R26");//R6 = -1 aka 0xff
+        out.println("    eor R24,R26");//A number and exclusive or with 0xff is not
+        out.println("    push R24");//Push return.
+        out.println();
+        out.flush();
 	}
 
 	@Override
@@ -1106,7 +1155,19 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outPlusExp(PlusExp node)
 	{
-		defaultOut(node);
+        //TODO has width issue (Use adc if double wide for second 8 bits.)
+		//See comments for full width version.
+        out.println("    pop R24");
+        //out.println("    pop R25");
+        out.println("    pop R26");
+        //out.println("    pop R27");
+        out.println("    add R24,R26");
+        //out.println("    adc R25,R27");
+        out.println("    push R24");
+        //out.println("    push R25");
+        //TODO Check push pop order for high and low consistency.
+        out.println();
+        out.flush();
 	}
 
 	@Override
