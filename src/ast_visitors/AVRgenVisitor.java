@@ -816,21 +816,12 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMeggyGetPixel(MeggyGetPixel node)
 	{
-		// TODO find the proper call for ReadPx and find out
-		// which register the result is stored in.
-		
 		out.println("    ### Meggy.getPixel(x,y) call");
 		out.println("    # load a one byte expression off stack");
 		out.println("    pop    r22");
 		out.println("    # load a one byte expression off stack");
 		out.println("    pop    r24");
-		//I don't know if this is the correct call
-		//I based it off of _Z6DrawPxhhh
-		out.println("    call   _Z8ReadPxhh");
-		// we need to push the result onto the stack
-		// I don't know which register holds the result
-		// I took a guess with r24
-        // Based on what I have read this is correct.
+		out.println("    call   _Z6ReadPxhh");
 		out.println("    # push one byte color expression onto stack");
 		out.println("    push   r24");
 		out.println();
