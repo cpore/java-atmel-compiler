@@ -21,6 +21,9 @@ src/mjparser/SymbolValue.class
 src/mjparser/Yylex.class
 src/mjparser/mj.class
 src/mjparser/sym.class
+src/label/Label.class
+src/symtable/SymTable.class
+src/symtable/Type.class
 
 #ignore generated source files
 CupTestCases/*.class
