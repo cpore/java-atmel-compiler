@@ -86,6 +86,7 @@ non terminal IExp exp;
 non terminal IStatement statement;
 non terminal LinkedList<IStatement> statement_list;
 non terminal MainClass main_class;
+non terminal IStatement block_statement;
 
 /* Declare precedence and associativity  here */
 
@@ -128,42 +129,23 @@ main_class ::=
             :}
         LBRACE PUBLIC STATIC VOID MAIN 
         LPAREN STRING LBRACKET RBRACKET ID:param RPAREN
-        LBRACE
-          {: 
-            
-          :}
-        statement_list:list 
+       
+        block_statement:b 
           {:
-          	RESULT = new MainClass(name.line, name.pos, name.lexeme, param.lexeme, new BlockStatement(name.line, name.pos, list));
+          	RESULT = new MainClass(name.line, name.pos, name.lexeme, param.lexeme, b);
           :}
-        RBRACE
-          {:
-          	
-          :}
+
         RBRACE 
           {:
           	parser.out.flush();
           :}
-    |	PUBLIC STATIC VOID MAIN 
-        LPAREN STRING LBRACKET RBRACKET ID:param RPAREN
-        LBRACE 
-          {: 
-           
-          :}
-       RBRACE
-          {:
-          
-          :}
     ;
     
 statement ::= 
-		LBRACE:op statement_list:s RBRACE
-	  	  {:
-			if(s != null)
-				RESULT = new BlockStatement(op.line, op.pos, s);
-			else
-				RESULT = new BlockStatement(op.line, op.pos, new LinkedList<IStatement>());
-		  :}
+        block_statement:b
+          {:
+            RESULT = b;
+          :}
 	|	MEGGYSETPIXEL LPAREN:op exp:a COMMA	exp:b COMMA	exp:c RPAREN SEMI
 		  {:
 		  	RESULT = new MeggySetPixel(op.line, op.pos, a, b, c); 
@@ -188,6 +170,18 @@ statement ::=
 		  	RESULT = new WhileStatement(op.line, op.pos, a, s);
 		  :}
 	;
+
+block_statement ::=
+          LBRACE:op statement_list:s RBRACE
+	  	  {:
+			if(s != null)
+				RESULT = new BlockStatement(op.line, op.pos, s);
+			else
+				RESULT = new BlockStatement(op.line, op.pos, new LinkedList<IStatement>());
+		  :}
+    |     LBRACE:op RBRACE
+          {: RESULT = new BlockStatement(op.line, op.pos, new LinkedList<IStatement>()); :}
+    ;
 	
 statement_list ::=
 		statement_list:list statement:s
@@ -199,7 +193,6 @@ statement_list ::=
 		  :}
 	|	statement:s
 		  {:
-		  	
 			LinkedList<IStatement> list = new LinkedList<IStatement>();
             if(s != null)
             	list.add(s);
