@@ -826,8 +826,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    pop    r24");
 		//I don't know if this is the correct call
 		//I based it off of _Z6DrawPxhhh
-		out.println("    call   _Z6ReadPxhh");
-		out.println("    call   _Z12DisplaySlatev");
+		out.println("    call   _Z8ReadPxhh");
 		// we need to push the result onto the stack
 		// I don't know which register holds the result
 		// I took a guess with r24
