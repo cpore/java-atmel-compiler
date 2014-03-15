@@ -43,14 +43,17 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outAndExp(AndExp node)
 	{
-        //TODO Check width issue.
-        out.println("    #left");
+		out.println("    #left");
         out.println("    pop R24");
+        out.println("    pop R25");//High
         out.println("    #right");
         out.println("    pop R26");
+        out.println("    pop R27");
         out.println("    #R26 = R24 && R26");
         out.println("    and R24,R26");
-        out.println("    push R24");//Push result.
+        out.println("    and R25,R27");
+        out.println("    push R25");//Push high
+        out.println("    push R24");//Push low
         out.flush();
 
 	}
@@ -67,6 +70,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		{
 			node.getRExp().accept(this);
 		}
+		
 		outAndExp(node);
 	}
 
@@ -444,14 +448,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outEqualExp(EqualExp node)
 	{
-        //TODO Check for longer than byte variable.
-        //To handle it use sub and sbc (subtract with carry)
-        //We still need this however to handle shorter variables
-        //as they will only have two pushes and thus no extra data.
+		//Notice: This ONLY accepts 2 byte parameters.
         out.println("    #get the values");
         out.println("    pop R24");
+        out.println("    pop R25");
         out.println("    pop R26");
-        out.println("    sub R24,R26");
+        out.println("    pop R27");
+        out.println("    cp R24,R26");//Compare
+        out.println("    cpc R25,R27");//Compare with carry
 		out.println("    #Branch if equals");//Aka Z = 0;
         out.println("    breq 2");//Jump 2 + 1 if true.
         out.println("    push 0");//push False
@@ -982,12 +986,21 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMinusExp(MinusExp node)
 	{
-        //TODO Need types for sizes.
-        out.println("    #Subtract");
-        out.println("    pop R24");//Second argument
-        out.println("    pop R26");//First argument
-        out.println("    sub R26,24");
-        out.println("    push R6");//Result goes to R6 (first arg)
+        out.println("    #Load a two byte expression off stack");
+        out.println("    pop r18");
+        out.println("    pop r19");
+        out.println("    #Load a two byte expression off stack");
+        out.println("    pop r24");
+        out.println("    pop r25");
+        out.println();
+       
+        out.println("    # Do INT sub operation");
+        out.println("    sub r24, r18");
+        out.println("    sbc r25, r19");
+        out.println("	 # push hi order byte first");
+        out.println("    # push two byte expression onto stack");
+        out.println("	 push r25");
+        out.println("	 push r24");
         out.println();
         out.flush();
 	}
@@ -1014,14 +1027,12 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMulExp(MulExp node)
 	{
-		//Only allowed to use bytes.
-        //TODO Need to know if bytes are signed or not.
-        //For now we will expect all bytes to be signed.
-        out.println("    pop R24");//Multiplier (aka second argument)
-        out.println("    pop R26");//Multiplicand (aka first argument)
-        out.println("    muls R26,R24");
-        out.println("    push R0");//Result goes to R0:R1
-        out.println("    push R1");//Returns an int. (16 bits or two bytes)
+		out.println("    # Do multiplication of bytes");
+        out.println("    pop r24");
+        out.println("    pop r26");
+        out.println("    muls r26, r24");
+        out.println("    push r1");
+        out.println("    push r0");
         out.println();
         out.flush();
 	}
@@ -1117,12 +1128,10 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outNotExp(NotExp node)
 	{
-        //TODO this might be wrong and might have width issues.
-		out.println("    pop R24");//Get value
-        out.println("    sbr R26,0");//R6 = 0;
-        out.println("    dec R26");//R6 = -1 aka 0xff
-        out.println("    eor R24,R26");//A number and exclusive or with 0xff is not
-        out.println("    push R24");//Push return.
+		out.println("    pop R24");
+        out.println("    ldi R22,1");
+        out.println("    eor R24,R22");
+        out.println("    push R24");
         out.println();
         out.flush();
 	}
@@ -1145,17 +1154,21 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outPlusExp(PlusExp node)
 	{
-        //TODO has width issue (Use adc if double wide for second 8 bits.)
-		//See comments for full width version.
-        out.println("    pop R24");
-        //out.println("    pop R25");
-        out.println("    pop R26");
-        //out.println("    pop R27");
-        out.println("    add R24,R26");
-        //out.println("    adc R25,R27");
-        out.println("    push R24");
-        //out.println("    push R25");
-        //TODO Check push pop order for high and low consistency.
+		out.println("    #Load a two byte expression off stack");
+        out.println("    pop r18");
+        out.println("    pop r19");
+        out.println("    #Load a two byte expression off stack");
+        out.println("    pop r24");
+        out.println("    pop r25");
+        out.println();
+       
+        out.println("    # Do INT add operation");
+        out.println("    add r24, r18");
+        out.println("    adc r25, r19");
+        out.println("	 # push hi order byte first");
+        out.println("    # push two byte expression onto stack");
+        out.println("	 push r25");
+        out.println("	 push r24");
         out.println();
         out.flush();
 	}
