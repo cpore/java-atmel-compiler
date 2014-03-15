@@ -1018,6 +1018,36 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMinusExp(MinusExp node)
 	{
+		
+	}
+
+	@Override
+	public void visitMinusExp(MinusExp node)
+	{
+		inMinusExp(node);
+		if(node.getLExp() != null)
+		{
+			node.getLExp().accept(this);
+		}
+		if(node.getRExp() != null)
+		{
+			node.getRExp().accept(this);
+		}
+		
+		if(!(node.getLExp() instanceof IntLiteral)){
+			loadLByte();
+			promoteLByte();
+		}
+		else
+			loadLInt();
+		
+		if(!(node.getRExp() instanceof IntLiteral)){
+			loadRByte();
+			promoteRByte();
+		}
+		else
+			loadRInt();
+		
 		out.println("    #Load a two byte expression off stack");
 		out.println("    pop r18");
 		out.println("    pop r19");
@@ -1035,20 +1065,6 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("	 push r24");
 		out.println();
 		out.flush();
-	}
-
-	@Override
-	public void visitMinusExp(MinusExp node)
-	{
-		inMinusExp(node);
-		if(node.getLExp() != null)
-		{
-			node.getLExp().accept(this);
-		}
-		if(node.getRExp() != null)
-		{
-			node.getRExp().accept(this);
-		}
 		outMinusExp(node);
 	}
 
@@ -1206,8 +1222,21 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		//String signExtendLbl = new Label().toString();
 		//String noSignExtendLbl = new Label().toString();
 
-		loadRInt();
-		loadLInt();
+		if(!(node.getLExp() instanceof IntLiteral)){
+			loadLByte();
+			promoteLByte();
+		}
+		else
+			loadLInt();
+		
+		if(!(node.getRExp() instanceof IntLiteral)){
+			loadRByte();
+			promoteRByte();
+		}
+		else
+			loadRInt();
+		
+		
 		out.println("    # Do INT add operation");
 		out.println("    add r24, r18");
 		out.println("    adc r25, r19");
@@ -1260,7 +1289,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println();
 	}
 
-	private void promoteRbyte(){
+	private void promoteRByte(){
 		//Get necessary labels
 		String signExtendLbl = new Label().toString();
 		String noSignExtendLbl = new Label().toString();
