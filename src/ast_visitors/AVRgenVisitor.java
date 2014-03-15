@@ -43,14 +43,17 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outAndExp(AndExp node)
 	{
-        //TODO Check width issue.
         out.println("    #left");
         out.println("    pop R24");
+        out.println("    pop R25");//High
         out.println("    #right");
         out.println("    pop R26");
+        out.println("    pop R27");
         out.println("    #R26 = R24 && R26");
         out.println("    and R24,R26");
-        out.println("    push R24");//Push result.
+        out.println("    and R25,R27");
+        out.println("    push R25");//Push high
+        out.println("    push R24");//Push low
         out.flush();
 
 	}
