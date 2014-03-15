@@ -1121,12 +1121,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outNotExp(NotExp node)
 	{
-        //TODO this might be wrong and might have width issues.
 		out.println("    pop R24");//Get value
+        out.println("    pop R25");//High value
         out.println("    sbr R26,0");//R6 = 0;
         out.println("    dec R26");//R6 = -1 aka 0xff
         out.println("    eor R24,R26");//A number and exclusive or with 0xff is not
-        out.println("    push R24");//Push return.
+        out.println("    eor R25,R26");
+        out.println("    push R25");//Push high
+        out.println("    push R24");//Push low.
         out.println();
         out.flush();
 	}
