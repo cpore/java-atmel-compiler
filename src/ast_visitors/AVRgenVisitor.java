@@ -43,34 +43,66 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outAndExp(AndExp node)
 	{
-		out.println("    #left");
-        out.println("    pop R24");
-        out.println("    pop R25");//High
-        out.println("    #right");
-        out.println("    pop R26");
-        out.println("    pop R27");
-        out.println("    #R26 = R24 && R26");
-        out.println("    and R24,R26");
-        out.println("    and R25,R27");
-        out.println("    push R25");//Push high
-        out.println("    push R24");//Push low
-        out.flush();
+		/*out.println("    #left");
+		out.println("    pop R24");
+		out.println("    pop R25");//High
+		out.println("    #right");
+		out.println("    pop R26");
+		out.println("    pop R27");
+		out.println("    #R26 = R24 && R26");
+		out.println("    and R24,R26");
+		out.println("    and R25,R27");
+		out.println("    push R25");//Push high
+		out.println("    push R24");//Push low
+		out.flush();*/
 
 	}
 
 	@Override
 	public void visitAndExp(AndExp node)
 	{
+		//Get necessary labels
+		String goodLeft = new Label().toString();
+		String badLeft = new Label().toString();
+		
 		inAndExp(node);
+		
+		// get test expression
 		if(node.getLExp() != null)
 		{
 			node.getLExp().accept(this);
 		}
-		if(node.getRExp() != null)
+		out.println("    # &&: if left operand is false do not eval right");
+		out.println("    # load a one byte expression off stack");
+		out.println("    pop    r24");
+		out.println("    # push one byte expression onto stack");
+	    out.println("    push   r24");
+		
+	    out.println("    #load zero into reg");
+		out.println("    ldi    r25, 0");
+		out.println();
+
+		out.println("    #use cp to set SREG");
+		out.println("    cp     r24, r25");
+		out.println("    #WANT breq " + goodLeft);
+		out.println("    brne   " + badLeft);
+		out.println("    jmp    " + goodLeft);
+		out.println();
+
+		out.println(badLeft + ":");
+		out.println("    # right operand");
+		out.println("# load a one byte expression off stack");
+		out.println("pop    r24");
+		out.println();
+	    
+	    if(node.getRExp() != null)
 		{
 			node.getRExp().accept(this);
 		}
+
+	    out.println(goodLeft + ":");
 		
+		out.flush();
 		outAndExp(node);
 	}
 
@@ -449,21 +481,21 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void outEqualExp(EqualExp node)
 	{
 		//Notice: This ONLY accepts 2 byte parameters.
-        out.println("    #get the values");
-        out.println("    pop R24");
-        out.println("    pop R25");
-        out.println("    pop R26");
-        out.println("    pop R27");
-        out.println("    cp R24,R26");//Compare
-        out.println("    cpc R25,R27");//Compare with carry
+		out.println("    #get the values");
+		out.println("    pop R24");
+		out.println("    pop R25");
+		out.println("    pop R26");
+		out.println("    pop R27");
+		out.println("    cp R24,R26");//Compare
+		out.println("    cpc R25,R27");//Compare with carry
 		out.println("    #Branch if equals");//Aka Z = 0;
-        out.println("    breq 2");//Jump 2 + 1 if true.
-        out.println("    push 0");//push False
-        out.println("    rjmp 1");//Skip the push
-        out.println("    push 1");//push true
-        out.println();//Done
-        //The next command will pop to read the value.
-        out.flush();
+		out.println("    breq 2");//Jump 2 + 1 if true.
+		out.println("    push 0");//push False
+		out.println("    rjmp 1");//Skip the push
+		out.println("    push 1");//push true
+		out.println();//Done
+		//The next command will pop to read the value.
+		out.flush();
 	}
 
 	@Override
@@ -745,7 +777,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		String jmpPastZeroLbl = new Label().toString();
 		// Check button is special case where we need
 		// to examine the child nodes, do not use the stack
-		
+
 		String buttonValue = node.getExp().toString();
 		if(buttonValue.equals("Meggy.Button.Up"))
 			buttonValue = "Button_Up";
@@ -986,23 +1018,23 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMinusExp(MinusExp node)
 	{
-        out.println("    #Load a two byte expression off stack");
-        out.println("    pop r18");
-        out.println("    pop r19");
-        out.println("    #Load a two byte expression off stack");
-        out.println("    pop r24");
-        out.println("    pop r25");
-        out.println();
-       
-        out.println("    # Do INT sub operation");
-        out.println("    sub r24, r18");
-        out.println("    sbc r25, r19");
-        out.println("	 # push hi order byte first");
-        out.println("    # push two byte expression onto stack");
-        out.println("	 push r25");
-        out.println("	 push r24");
-        out.println();
-        out.flush();
+		out.println("    #Load a two byte expression off stack");
+		out.println("    pop r18");
+		out.println("    pop r19");
+		out.println("    #Load a two byte expression off stack");
+		out.println("    pop r24");
+		out.println("    pop r25");
+		out.println();
+
+		out.println("    # Do INT sub operation");
+		out.println("    sub r24, r18");
+		out.println("    sbc r25, r19");
+		out.println("	 # push hi order byte first");
+		out.println("    # push two byte expression onto stack");
+		out.println("	 push r25");
+		out.println("	 push r24");
+		out.println();
+		out.flush();
 	}
 
 	@Override
@@ -1028,13 +1060,13 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void outMulExp(MulExp node)
 	{
 		out.println("    # Do multiplication of bytes");
-        out.println("    pop r24");
-        out.println("    pop r26");
-        out.println("    muls r26, r24");
-        out.println("    push r1");
-        out.println("    push r0");
-        out.println();
-        out.flush();
+		out.println("    pop r24");
+		out.println("    pop r26");
+		out.println("    muls r26, r24");
+		out.println("    push r1");
+		out.println("    push r0");
+		out.println();
+		out.flush();
 	}
 
 	@Override
@@ -1101,13 +1133,11 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outNegExp(NegExp node)
 	{
-        //TODO has width issue.
-        //Gets complicated when dealing with values larger than a byte.
 		out.println("    pop r24");
-        out.println("    neg r24");
-        out.println("    push r24");
-        out.println();
-        out.flush();
+		out.println("    neg r24");
+		out.println("    push r24");
+		out.println();
+		out.flush();
 	}
 
 	@Override
@@ -1129,11 +1159,11 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void outNotExp(NotExp node)
 	{
 		out.println("    pop R24");
-        out.println("    ldi R22,1");
-        out.println("    eor R24,R22");
-        out.println("    push R24");
-        out.println();
-        out.flush();
+		out.println("    ldi R22,1");
+		out.println("    eor R24,R22");
+		out.println("    push R24");
+		out.println();
+		out.flush();
 	}
 
 	@Override
@@ -1154,23 +1184,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outPlusExp(PlusExp node)
 	{
-		out.println("    #Load a two byte expression off stack");
-        out.println("    pop r18");
-        out.println("    pop r19");
-        out.println("    #Load a two byte expression off stack");
-        out.println("    pop r24");
-        out.println("    pop r25");
-        out.println();
-       
-        out.println("    # Do INT add operation");
-        out.println("    add r24, r18");
-        out.println("    adc r25, r19");
-        out.println("	 # push hi order byte first");
-        out.println("    # push two byte expression onto stack");
-        out.println("	 push r25");
-        out.println("	 push r24");
-        out.println();
-        out.flush();
+		
 	}
 
 	@Override
@@ -1185,8 +1199,113 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		{
 			node.getRExp().accept(this);
 		}
+
+		//Get necessary labels
+	//	String ifNegativeLbl = new Label().toString();
+		//String ifpositiveLbl = new Label().toString();
+		//String signExtendLbl = new Label().toString();
+		//String noSignExtendLbl = new Label().toString();
+
+		loadRInt();
+		loadLInt();
+		out.println("    # Do INT add operation");
+		out.println("    add r24, r18");
+		out.println("    adc r25, r19");
+		out.println("	 # push hi order byte first");
+		out.println("    # push two byte expression onto stack");
+		out.println("	 push r25");
+		out.println("	 push r24");
+		out.println();
+		out.flush();
 		outPlusExp(node);
 	}
+
+	private void loadLInt(){
+		out.println("    #Load an int byte expression off stack");
+		out.println("    pop r18");
+		out.println("    pop r19");
+		out.println();
+	}
+
+	private void loadRInt(){
+		out.println("    #Load an int expression off stack");
+		out.println("    pop r24");
+		out.println("    pop r25");
+		out.println();
+	}
+
+	private void loadLByte(){
+		out.println("    #Load a one byte expression off stack");
+		out.println("    pop r18");
+
+	}
+
+	private void loadRByte(){
+		out.println("    #Load a one byte expression off stack");
+		out.println("    pop r24");
+	}
+
+	private void promoteLByte(){
+		//Get necessary labels
+		String signExtendLbl = new Label().toString();
+		String noSignExtendLbl = new Label().toString();
+		out.println("    # promoting a byte to an int");
+		out.println("    tst     r18");
+		out.println("    brlt     " + signExtendLbl);
+		out.println("    ldi    r19, 0");
+		out.println("    jmp    " + noSignExtendLbl);
+		out.println(signExtendLbl + ":");
+		out.println("    ldi    r19, hi8(-1)");
+		out.println(noSignExtendLbl + ":");
+		out.println();
+	}
+
+	private void promoteRbyte(){
+		//Get necessary labels
+		String signExtendLbl = new Label().toString();
+		String noSignExtendLbl = new Label().toString();
+		out.println("    # promoting a byte to an int");
+		out.println("    tst     r24");
+		out.println("    brlt     " + signExtendLbl);
+		out.println("    ldi    r25, 0");
+		out.println("    jmp    " + noSignExtendLbl);
+		out.println(signExtendLbl + ":");
+		out.println("    ldi    r25, hi8(-1)");
+		out.println(noSignExtendLbl + ":");
+		out.println();
+	}
+
+	private void promoteByte(){
+		//Get necessary labels
+		String ifNegativeLbl = new Label().toString();
+		String ifpositiveLbl = new Label().toString();
+		String signExtendLbl = new Label().toString();
+		String noSignExtendLbl = new Label().toString();
+		out.println("    #Load a one byte expression off stack");
+		out.println("    pop r18");
+		out.println("    #Load a one byte expression off stack");
+		out.println("    pop r24");
+		out.println();
+		out.println("    # promoting a byte to an int");
+		out.println("    tst     r24");
+		out.println("    brlt     " + ifNegativeLbl);
+		out.println("    ldi    r25, 0");
+		out.println("    jmp    " + ifpositiveLbl);
+		out.println(ifNegativeLbl + ":");
+		out.println("    ldi    r25, hi8(-1)");
+		out.println(ifpositiveLbl + ":");
+		out.println("    # promoting a byte to an int");
+		out.println("    tst     r18");
+		out.println("    brlt     " + signExtendLbl);
+		out.println("    ldi    r19, 0");
+		out.println("    jmp    " + noSignExtendLbl);
+		out.println(signExtendLbl + ":");
+		out.println("    ldi    r19, hi8(-1)");
+		out.println(noSignExtendLbl + ":");
+		out.println();
+	}
+
+
 
 	public void inProgram(Program node)
 	{
