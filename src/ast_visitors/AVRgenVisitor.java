@@ -444,14 +444,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outEqualExp(EqualExp node)
 	{
-        //TODO Check for longer than byte variable.
-        //To handle it use sub and sbc (subtract with carry)
-        //We still need this however to handle shorter variables
-        //as they will only have two pushes and thus no extra data.
+        //Notice: This ONLY accepts 2 byte parameters.
         out.println("    #get the values");
         out.println("    pop R24");
+        out.println("    pop R25");
         out.println("    pop R26");
-        out.println("    sub R24,R26");
+        out.println("    pop R27");
+        out.println("    cp R24,R26");//Compare
+        out.println("    cpc R25,R27");//Compare with carry
 		out.println("    #Branch if equals");//Aka Z = 0;
         out.println("    breq 2");//Jump 2 + 1 if true.
         out.println("    push 0");//push False
@@ -982,12 +982,16 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMinusExp(MinusExp node)
 	{
-        //TODO Need types for sizes.
+        //Note: This ONLY handles 16 bit words.
         out.println("    #Subtract");
         out.println("    pop R24");//Second argument
+        out.println("    pop R25");
         out.println("    pop R26");//First argument
-        out.println("    sub R26,24");
-        out.println("    push R6");//Result goes to R6 (first arg)
+        out.println("    pop R27");
+        out.println("    sub R26,R24");
+        out.println("    sbc R27,R25");
+        out.println("    push R7");//Push high
+        out.println("    push R6");//Push low
         out.println();
         out.flush();
 	}
@@ -1015,7 +1019,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void outMulExp(MulExp node)
 	{
 		//Only allowed to use bytes.
-        //TODO Need to know if bytes are signed or not.
+        //All params are expected to be signed.
         //For now we will expect all bytes to be signed.
         out.println("    pop R24");//Multiplier (aka second argument)
         out.println("    pop R26");//Multiplicand (aka first argument)
@@ -1145,17 +1149,15 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outPlusExp(PlusExp node)
 	{
-        //TODO has width issue (Use adc if double wide for second 8 bits.)
-		//See comments for full width version.
+        //Notice: This expects 16 bit params.
         out.println("    pop R24");
-        //out.println("    pop R25");
+        out.println("    pop R25");
         out.println("    pop R26");
-        //out.println("    pop R27");
+        out.println("    pop R27");
         out.println("    add R24,R26");
-        //out.println("    adc R25,R27");
+        out.println("    adc R25,R27");
+        out.println("    push R25");
         out.println("    push R24");
-        //out.println("    push R25");
-        //TODO Check push pop order for high and low consistency.
         out.println();
         out.flush();
 	}
