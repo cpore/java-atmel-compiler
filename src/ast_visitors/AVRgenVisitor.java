@@ -488,7 +488,8 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 				node.getLExp() instanceof TrueLiteral ||
 				node.getLExp() instanceof FalseLiteral ||
 				node.getLExp() instanceof ColorLiteral ||
-				node.getLExp() instanceof MulExp){
+				node.getLExp() instanceof MulExp ||
+				node.getLExp() instanceof MeggyGetPixel){
 			loadLByte();
 			promoteLByte();
 		}
@@ -499,7 +500,8 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 				node.getRExp() instanceof TrueLiteral ||
 				node.getRExp() instanceof FalseLiteral ||
 				node.getRExp() instanceof ColorLiteral ||
-				node.getLExp() instanceof MulExp){
+				node.getRExp() instanceof MulExp ||
+				node.getRExp() instanceof MeggyGetPixel){
 			loadRByte();
 			promoteRByte();
 		}
@@ -509,8 +511,9 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		//Get necessary labels
 		String equalLbl = new Label().toString();
 		String notEqualLbl = new Label().toString();
-		out.println("    cp     r18,r24");//Compare
-		out.println("    cpc    r19,r25");//Compare with carry
+		out.println("    cp     r24,r18");//Compare
+		out.println("    brne " + notEqualLbl);
+		out.println("    cp    r25,r19");//Compare with carry
 		out.println("    #Branch if not equals");//Aka Z = 0;
 		out.println("    brne " + notEqualLbl);
 		out.println("    ldi    r24, 1");
@@ -1179,11 +1182,11 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		}
 		
 		if(node.getExp() instanceof ByteCast){
-			loadRByte();
-			promoteRByte();
+			loadLByte();
+			promoteLByte();
 		}
 		else
-			loadRInt();
+			loadLInt();
 
 		out.println("    # Do INT sub operation twice to negate");
 		out.println("    #Copy Registers");
@@ -1282,7 +1285,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		outPlusExp(node);
 	}
 
-	private void loadLInt(){
+	private void loadRInt(){
 		out.println("    #Load an int expression off stack");
 		out.println("    pop r18");
 		out.println("    pop r19");
@@ -1290,7 +1293,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.flush();
 	}
 
-	private void loadRInt(){
+	private void loadLInt(){
 		out.println("    #Load an int expression off stack");
 		out.println("    pop r24");
 		out.println("    pop r25");
@@ -1298,19 +1301,19 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.flush();
 	}
 
-	private void loadLByte(){
+	private void loadRByte(){
 		out.println("    #Load a one byte expression off stack");
 		out.println("    pop r18");
 		out.flush();
 	}
 
-	private void loadRByte(){
+	private void loadLByte(){
 		out.println("    #Load a one byte expression off stack");
 		out.println("    pop r24");
 		out.flush();
 	}
 
-	private void promoteLByte(){
+	private void promoteRByte(){
 		//Get necessary labels
 		String signExtendLbl = new Label().toString();
 		String noSignExtendLbl = new Label().toString();
@@ -1326,7 +1329,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.flush();
 	}
 
-	private void promoteRByte(){
+	private void promoteLByte(){
 		//Get necessary labels
 		String signExtendLbl = new Label().toString();
 		String noSignExtendLbl = new Label().toString();
