@@ -79,10 +79,10 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 		out.println(badLeft + ":");
 		out.println("    # right operand");
-		out.println("# load a one byte expression off stack");
+		out.println("    # load a one byte expression off stack");
 		out.println("pop    r24");
 		out.println();
-
+		out.flush();
 		if(node.getRExp() != null)
 		{
 			node.getRExp().accept(this);
@@ -412,10 +412,10 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	{
 		// This code assumes that node.getIntValue() will fit into
 		// A byte. Do we need to check for this in the type checker?
-		out.println("    # Load Color expression from Symbol");
-		out.println("    ldi    r24, " + node.getIntValue());
+		out.println("    # Load Color expression " + node.getLexeme());
+		out.println("    ldi    r22, " + node.getIntValue());
 		out.println("    # push two byte expression onto stack");
-		out.println("    push   r24");
+		out.println("    push   r22");
 		out.println();
 		out.flush();
 	}
@@ -487,7 +487,8 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		if(node.getLExp() instanceof ByteCast ||
 				node.getLExp() instanceof TrueLiteral ||
 				node.getLExp() instanceof FalseLiteral ||
-				node.getLExp() instanceof ColorLiteral){
+				node.getLExp() instanceof ColorLiteral ||
+				node.getLExp() instanceof MulExp){
 			loadLByte();
 			promoteLByte();
 		}
@@ -497,7 +498,8 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		if(node.getRExp() instanceof ByteCast ||
 				node.getRExp() instanceof TrueLiteral ||
 				node.getRExp() instanceof FalseLiteral ||
-				node.getRExp() instanceof ColorLiteral){
+				node.getRExp() instanceof ColorLiteral ||
+				node.getLExp() instanceof MulExp){
 			loadRByte();
 			promoteRByte();
 		}
@@ -618,13 +620,13 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    # load a one byte expression off stack");
 		out.println("    pop    r24");
 		out.println("    #load zero into reg");
-		// notice that we are comparing to FALSE
+		// notice that we are comparing r24 to FALSE
 		out.println("    ldi    r25, 0");
 		out.println();
 
 		out.println("    #use cp to set SREG");
 		out.println("    cp     r24, r25");
-		out.println("    #WANT breq " + thenLbl);
+		out.println("    #WANT breq " + elseLbl);
 		out.println("    brne   " + thenLbl);
 		out.println("    jmp    " + elseLbl);
 		out.println();
@@ -632,16 +634,18 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    # then label for if");
 		out.println(thenLbl + ":");
 		out.println();
+		out.flush();
 		//write then code
 		if(node.getThenStatement() != null)
 		{
 			node.getThenStatement().accept(this);
 		}
-		out.println("    jmp    " +doneLbl);
+		out.println("    jmp    " + doneLbl);
 
 		out.println("    # else label for if");
 		out.println(elseLbl + ":");
 		out.println();
+		out.flush();
 		//write else code
 		if(node.getElseStatement() != null)
 		{
@@ -1051,14 +1055,18 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			node.getRExp().accept(this);
 		}
 
-		if(node.getLExp() instanceof ByteCast){
+		if(node.getLExp() instanceof ByteCast ||
+				node.getLExp() instanceof MulExp){
+			//System.out.println("Found LByte");
 			loadLByte();
 			promoteLByte();
 		}
 		else
 			loadLInt();
 
-		if(node.getRExp() instanceof ByteCast){
+		if(node.getRExp() instanceof ByteCast ||
+				node.getRExp() instanceof MulExp){
+			//System.out.println("Found RByte");
 			loadRByte();
 			promoteRByte();
 		}
@@ -1244,14 +1252,18 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			node.getRExp().accept(this);
 		}
 
-		if(node.getLExp() instanceof ByteCast){
+		if(node.getLExp() instanceof ByteCast ||
+				node.getLExp() instanceof MulExp){
+			//System.out.println("Found LByte");
 			loadLByte();
 			promoteLByte();
 		}
 		else
 			loadLInt();
 
-		if(node.getRExp() instanceof ByteCast){
+		if(node.getRExp() instanceof ByteCast ||
+				node.getRExp() instanceof MulExp){
+			//System.out.println("Found RByte");
 			loadRByte();
 			promoteRByte();
 		}
@@ -1634,7 +1646,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    # while loop body");
 		out.println(whileBodyLbl + ":");
 		out.println();
-
+		out.flush();
 		// This will add AVR code for all the statements in the while block
 		if(node.getStatement() != null)
 		{
@@ -1647,7 +1659,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 		out.println("    # end of while");
 		out.println(whileExitLbl + ":");
-
+		out.flush();
 		outWhileStatement(node);
 	}
 

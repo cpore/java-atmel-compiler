@@ -137,7 +137,7 @@ main_class ::=
 
         RBRACE 
           {:
-          	parser.out.flush();
+          	//parser.out.flush();
           :}
     ;
     

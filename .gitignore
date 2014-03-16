@@ -49,7 +49,7 @@ src/ast_visitors/*.class
 *~
 
 #misc
-*.s
+*.java.s
 *.dot
 *.png
 PA3Start.tar.gz
