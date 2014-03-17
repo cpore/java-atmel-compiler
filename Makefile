@@ -43,7 +43,7 @@ source: $(PARSE_DIR)/Yylex.java $(PARSE_DIR)/mj.java
 
 .PHONY:clean
 clean:
-	rm -rf $(SRC_DIR)/*.class $(SRC_DIR)/*/*.class
+	rm -rf $(SRC_DIR)/*.class $(SRC_DIR)/*/*.class $(SRC_DIR)/*/*/*.class
 	rm -f $(PARSE_DIR)/sym.java $(PARSE_DIR)/mj.java $(PARSE_DIR)/Yylex.java
 	rm -rf META_INF
 	rm -rf $(PROG).jar

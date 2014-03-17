@@ -479,28 +479,17 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		{
 			node.getLExp().accept(this);
 		}
+
+		
 		if(node.getRExp() != null)
 		{
 			node.getRExp().accept(this);
 		}
-
-		if(node.getLExp() instanceof ByteCast ||
-				node.getLExp() instanceof TrueLiteral ||
-				node.getLExp() instanceof FalseLiteral ||
-				node.getLExp() instanceof ColorLiteral ||
-				node.getLExp() instanceof MulExp ||
-				node.getLExp() instanceof MeggyGetPixel){
-			loadLByte();
-			promoteLByte();
-		}
-		else
-			loadLInt();
-
+		
 		if(node.getRExp() instanceof ByteCast ||
 				node.getRExp() instanceof TrueLiteral ||
 				node.getRExp() instanceof FalseLiteral ||
 				node.getRExp() instanceof ColorLiteral ||
-				node.getRExp() instanceof MulExp ||
 				node.getRExp() instanceof MeggyGetPixel){
 			loadRByte();
 			promoteRByte();
@@ -508,12 +497,24 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		else
 			loadRInt();
 
+		if(node.getLExp() instanceof ByteCast ||
+				node.getLExp() instanceof TrueLiteral ||
+				node.getLExp() instanceof FalseLiteral ||
+				node.getLExp() instanceof ColorLiteral ||
+				node.getLExp() instanceof MeggyGetPixel){
+			loadLByte();
+			promoteLByte();
+		}
+		else
+			loadLInt();
+
+
 		//Get necessary labels
 		String equalLbl = new Label().toString();
 		String notEqualLbl = new Label().toString();
-		out.println("    cp     r24,r18");//Compare
+		out.println("    cp     r24, r18");//Compare
 		out.println("    brne " + notEqualLbl);
-		out.println("    cp    r25,r19");//Compare with carry
+		out.println("    cp    r25, r19");//Compare with carry
 		out.println("    #Branch if not equals");//Aka Z = 0;
 		out.println("    brne " + notEqualLbl);
 		out.println("    ldi    r24, 1");
@@ -686,7 +687,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outIntegerExp(IntLiteral node)
 	{
-		out.println("    # Load constant int from Symbol");
+		out.println("    # Load constant int " + node.getIntValue());
 		out.println("    ldi    r24,lo8("+node.getIntValue()+")");
 		out.println("    ldi    r25,hi8("+node.getIntValue()+")");
 		out.println("    # push two byte expression onto stack");
@@ -1053,29 +1054,30 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		{
 			node.getLExp().accept(this);
 		}
+
+		
 		if(node.getRExp() != null)
 		{
 			node.getRExp().accept(this);
 		}
-
-		if(node.getLExp() instanceof ByteCast ||
-				node.getLExp() instanceof MulExp){
-			//System.out.println("Found LByte");
-			loadLByte();
-			promoteLByte();
-		}
-		else
-			loadLInt();
-
-		if(node.getRExp() instanceof ByteCast ||
-				node.getRExp() instanceof MulExp){
+		
+		if(node.getRExp() instanceof ByteCast){
 			//System.out.println("Found RByte");
 			loadRByte();
 			promoteRByte();
-		}
-		else
+		}else{
 			loadRInt();
+		}
 
+		if(node.getLExp() instanceof ByteCast){
+			//System.out.println("Found LByte");
+			loadLByte();
+			promoteLByte();
+		}else{
+			loadLInt();
+		}
+
+				
 		out.println("    # Do INT sub operation");
 		out.println("    sub r24, r18");
 		out.println("    sbc r25, r19");
@@ -1190,12 +1192,13 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 		out.println("    # Do INT sub operation twice to negate");
 		out.println("    #Copy Registers");
-		out.println("    mov r20, r24");
-		out.println("    mov r21, r25");
-		out.println("    sub r24, r20");
-		out.println("    sbc r25, r21");
-		out.println("    sub r24, r20");
-		out.println("    sbc r25, r21");
+		out.println("    mov r18, r24");
+		out.println("    mov r19, r25");
+		
+		out.println("    sub r24, r18");
+		out.println("    sbc r25, r19");
+		out.println("    sub r24, r18");
+		out.println("    sbc r25, r19");
 		out.println("    # push hi order byte first");
 		out.println("    # push two byte expression onto stack");
 		out.println("    push r25");
@@ -1255,8 +1258,17 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			node.getRExp().accept(this);
 		}
 
-		if(node.getLExp() instanceof ByteCast ||
-				node.getLExp() instanceof MulExp){
+
+		if(node.getRExp() instanceof ByteCast){
+			//System.out.println("Found RByte");
+			loadRByte();
+			promoteRByte();
+		}
+		else
+			loadRInt();
+		
+		
+		if(node.getLExp() instanceof ByteCast){
 			//System.out.println("Found LByte");
 			loadLByte();
 			promoteLByte();
@@ -1264,14 +1276,6 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		else
 			loadLInt();
 
-		if(node.getRExp() instanceof ByteCast ||
-				node.getRExp() instanceof MulExp){
-			//System.out.println("Found RByte");
-			loadRByte();
-			promoteRByte();
-		}
-		else
-			loadRInt();
 
 		out.println("    # Do INT add operation");
 		out.println("    add r24, r18");
@@ -1626,6 +1630,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		String whileBodyLbl = new Label().toString();
 		String whileExitLbl = new Label().toString();
 		inWhileStatement(node);
+		out.println(whileTestLbl + ":");
 		if(node.getExp() != null)
 		{
 			node.getExp().accept(this);
@@ -1633,7 +1638,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		//After we get the expression, there will be a bool
 		//on the stack that we can test
 		out.println("    #### while statement");
-		out.println(whileTestLbl + ":");
+		
 		out.println();
 
 		out.println("    # if not(condition)");
@@ -1643,7 +1648,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    cp     r24, r25");
 		out.println("    # WANT breq " + whileExitLbl);
 		out.println("    brne   " + whileBodyLbl);
-		out.println("    jmp    MJ_L2");
+		out.println("    jmp    " + whileExitLbl);
 		out.println();
 
 		out.println("    # while loop body");

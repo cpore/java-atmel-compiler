@@ -5,9 +5,12 @@
 
 import meggy.Meggy;
 
-class NegExp {
+class EmptyIf {
     public static void main(String[] whatever){
-	    Meggy.setPixel( (byte)((byte)2 - - -(byte)2), (byte)(3+1), Meggy.Color.GREEN );
-	
+	if ((byte)2  == ((byte)3+1)-2){
+	   
+	}else{ }
+	    
+	    
     }
 }
