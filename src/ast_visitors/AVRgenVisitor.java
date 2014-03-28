@@ -261,6 +261,10 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outByteCast(ByteCast node)
 	{
+		if(node.getExp() instanceof ByteCast){
+			// Do nothing
+			return;
+		}
 		out.println("    # Casting int to byte by popping");
 		out.println("    # 2 bytes off stack and only pushing low order bits");
 		out.println("    # back on.  Low order bits are on top of stack.");
