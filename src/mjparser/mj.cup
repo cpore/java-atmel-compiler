@@ -87,6 +87,9 @@ non terminal IStatement statement;
 non terminal LinkedList<IStatement> statement_list;
 non terminal MainClass main_class;
 non terminal IStatement block_statement;
+non terminal CallExp call_exp;
+non terminal LinkedList<IExp> opt_exp;
+non terminal IdLiteral id;
 
 /* Declare precedence and associativity  here */
 
@@ -94,6 +97,8 @@ precedence left EQUAL;
 precedence left PLUS, MINUS;
 precedence left TIMES;
 precedence left AND;
+precedence left LT;
+precedence left DOT;
 precedence left ELSE;
 precedence left UMINUS, BYTE;
 
@@ -108,9 +113,6 @@ program ::=
     		RESULT = new Program(mclass.getLine(), mclass.getPos(), mclass, new LinkedList<IClassDecl>());
     	:}
     |
-    	{:
-    	
-    	:}
     ;
     
 main_class ::=
@@ -150,9 +152,17 @@ statement ::=
 		  {:
 		  	RESULT = new MeggySetPixel(op.line, op.pos, a, b, c); 
 		  :}
+	|	MEGGYTONESTART LPAREN:op exp:a COMMA exp:b RPAREN SEMI
+		  {:
+		  	RESULT = new MeggyToneStart(op.line, op.pos, a, b); 
+		  :}
 	|	MEGGYDELAY LPAREN:op exp:a RPAREN SEMI
 		  {:
 		  	RESULT = new MeggyDelay(op.line, op.pos, a);
+		  :}
+	|	call_exp:a SEMI
+		  {:
+		  	RESULT = new CallStatement(a.getLine(), a.getPos(), a.getExp(), a.getId(), a.getArgs());
 		  :}
 	|	IF:op LPAREN exp:a RPAREN statement:s
 		  {:
@@ -180,7 +190,9 @@ block_statement ::=
 				RESULT = new BlockStatement(op.line, op.pos, new LinkedList<IStatement>());
 		  :}
     |     LBRACE:op RBRACE
-          {: RESULT = new BlockStatement(op.line, op.pos, new LinkedList<IStatement>()); :}
+          {: 
+          	RESULT = new BlockStatement(op.line, op.pos, new LinkedList<IStatement>()); 
+          :}
     ;
 	
 statement_list ::=
@@ -205,9 +217,12 @@ exp ::=
 		  {:
 		    RESULT = new AndExp(op.line, op.pos, a, b);
 		  :}
+	|	exp:a LT:op exp:b
+		  {:
+		    RESULT = new LtExp(op.line, op.pos, a, b);
+		  :}
 	|	exp:a EQUAL:op exp:b
 		  {:
-		  	//System.out.println("EqualExp a: " + a.getClass().getSimpleName() + " EqualExp b: " + b.getClass().getSimpleName());
 		    RESULT = new EqualExp(op.line, op.pos, a, b);
 		  :}
 	|	exp:a PLUS:op exp:b
@@ -227,6 +242,10 @@ exp ::=
 		  	RESULT = new NegExp(op.line, op.pos, a);
 		  :}
           %prec UMINUS
+	|	call_exp:a
+		  {:
+		    RESULT = a;
+		  :}
 	|	MEGGYGETPIXEL:op LPAREN exp:a COMMA exp:b RPAREN	
 		  {:
 		    RESULT = new MeggyGetPixel(op.line, op.pos, a, b);
@@ -253,6 +272,10 @@ exp ::=
 		  {: 
 			RESULT = new ButtonLiteral(i.line, i.pos, i.lexeme, i.value);
 		  :}
+	|	TONE_LITERAL:i
+		  {: 
+			RESULT = new ToneLiteral(i.line, i.pos, i.lexeme, i.value);
+		  :}
 	|	TRUE:i
 		  {: 
 			RESULT = new TrueLiteral(i.line, i.pos, i.lexeme, i.value);
@@ -260,6 +283,19 @@ exp ::=
 	|	FALSE:i
 		  {: 
 			RESULT = new FalseLiteral(i.line, i.pos, i.lexeme, i.value);
+		  :}
+	|	id:i
+		  {: 
+			RESULT = i;
+		  :}
+	|	THIS:i
+		  {: 
+		  	// HOW DO WE HANDLE VALUE FOR THIS CONSTRUCTOR?
+			RESULT = new ThisLiteral(i.line, i.pos, i.lexeme, i.pos);
+		  :}
+	|	NEW:op id:i LPAREN RPAREN
+	 	  {: 
+			RESULT = new NewExp(op.line, op.pos, i.getLexeme());
 		  :}
 	|	NOT:i exp:a
 	 	  {: 
@@ -272,3 +308,34 @@ exp ::=
 		  :}
 	;
 	
+call_exp ::=
+		exp:a DOT:op id:i LPAREN RPAREN
+		  {:
+		    RESULT = new CallExp(op.line, op.pos, a, i.getLexeme(), new LinkedList<IExp>());
+		  :}
+	|	exp:a DOT:op id:i LPAREN opt_exp:b RPAREN
+		  {:
+		    RESULT = new CallExp(op.line, op.pos, a, i.getLexeme(), b);
+		  :}
+	;
+	
+opt_exp	::=
+		exp:a
+		{:
+		  LinkedList<IExp> list = new LinkedList<IExp>();
+		  list.add(a);
+		  RESULT = list;
+		:}
+	|   opt_exp:list COMMA exp:a
+		{:
+		  list.add(a);
+		  RESULT = list;
+		:}
+	;
+	
+id	::=
+		ID:i
+		{: 
+			RESULT = new IdLiteral(i.line, i.pos, i.lexeme);
+		:}
+	;
