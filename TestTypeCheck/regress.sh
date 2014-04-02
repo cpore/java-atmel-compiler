@@ -12,7 +12,7 @@ function createPng()
 }
 
 
-for filename in `ls *.java`
+for filename in `ls $1*.java`
 do
     echo "Regression testing MJ.jar $filename"
 
