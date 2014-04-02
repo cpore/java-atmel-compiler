@@ -6,39 +6,29 @@
 
 #ignore all compiled classes
 MJ.jar
-MJPA2.jar
 javacup.dump
 /src/mjparser/mj.java
 /src/mjparser/sym.java
 /src/mjparser/Yylex.java
 src/MJDriver.class
 src/MJPA2Driver.class
-src/exceptions/InternalException.class
-src/exceptions/SemanticException.class
-src/mjparser/CUP$mj$actions.class
-src/mjparser/ParseException.class
-src/mjparser/SymbolValue.class
-src/mjparser/Yylex.class
-src/mjparser/mj.class
-src/mjparser/sym.class
-src/label/Label.class
-src/symtable/SymTable.class
-src/symtable/Type.class
+src/*/*.class
 
 #ignore generated source files
-CupTestCases/*.class
-CupTestCases/mjsimPictures
+PA2Tests/CupTestCases/*.class
+PA2Tests/CupTestCases/mjsimPictures
 
-TestCasesMeggy/mjsimPictures
-TestCasesMeggy/output.log
-TestCasesMeggy/t1
-TestCasesMeggy/t2
-TestCasesMeggy/*.class
+PA[0-9]Tests/mjsimPictures
+PA[0-9]Tests/output.log
+PA[0-9]Tests/t1
+PA[0-9]Tests/t2
 TestTypeCheck/*.class
+PA[0-9]Tests/*/*.class
+PA[0-9]Tests/*.class
+PA[0-9]Tests/.nfs*
 
-src/ast/node/*.class
-src/ast/visitor/*.class
 
+src/ast/*/*.class
 src/ast_visitors/*.class
 
 
@@ -52,4 +42,5 @@ src/ast_visitors/*.class
 *.java.s
 *.dot
 *.png
+
 PA3Start.tar.gz

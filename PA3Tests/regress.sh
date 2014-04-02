@@ -72,6 +72,7 @@ function createPng()
         echo "Creating $filename.png..."
         dot -Tpng $filename > $filename.png
     done
+    exit
 }
 
 ##############################################################
@@ -107,9 +108,16 @@ else
         compareMJwithJava $filename
     done
 
+    echo
+    echo "#### Testing with the files in PA?TestCases ####"
+    for filename in `ls PA?TestCases/*.java`
+    do
+        compareMJwithJava $filename
+    done
+
 fi
 
-createPng
+#createPng
 
 echo
 rm t1 t2 *.s *.png *.class *.dot

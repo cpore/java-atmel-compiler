@@ -691,7 +691,18 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outLtExp(LtExp node)
 	{
-		defaultOut(node);
+		Type lexpType = this.mCurrentST.getExpType(node.getLExp());
+		Type rexpType = this.mCurrentST.getExpType(node.getRExp());
+		if ((lexpType==Type.INT  || lexpType==Type.BYTE) &&
+				(rexpType==Type.INT  || rexpType==Type.BYTE)){
+			this.mCurrentST.setExpType(node, Type.BOOL);
+		}else {
+
+			throw new SemanticException(
+					"Operands to < operator must be of numeric types",
+					node.getLExp().getLine(),
+					node.getLExp().getPos());
+		}
 	}
 
 	@Override

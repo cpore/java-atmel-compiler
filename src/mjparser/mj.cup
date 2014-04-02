@@ -90,6 +90,14 @@ non terminal IStatement block_statement;
 non terminal CallExp call_exp;
 non terminal LinkedList<IExp> opt_exp;
 non terminal IdLiteral id;
+non terminal IType type;
+non terminal MethodDecl method_decl;
+non terminal List<MethodDecl> method_decls;
+non terminal Formal formal;
+non terminal LinkedList<Formal> formals;
+non terminal IExp return_exp;
+non terminal IClassDecl topclass_decl;
+non terminal LinkedList<IClassDecl> class_decls;
 
 /* Declare precedence and associativity  here */
 
@@ -102,14 +110,17 @@ precedence left DOT;
 precedence left ELSE;
 precedence left UMINUS, BYTE;
 
+
 /* Meggy Java Grammar */
 start with program;
 
 program ::= 
-    IMPORT MEGGY SEMI main_class:mclass
+    IMPORT MEGGY SEMI main_class:mclass class_decls:c
     	{:
-    		// The last field is empty list since we are not dealing with
-    		// LinkedList<IClassDecl> yet.
+    		RESULT = new Program(mclass.getLine(), mclass.getPos(), mclass, c);
+    	:}
+    |	IMPORT MEGGY SEMI main_class:mclass
+    	{:
     		RESULT = new Program(mclass.getLine(), mclass.getPos(), mclass, new LinkedList<IClassDecl>());
     	:}
     |
@@ -132,7 +143,7 @@ main_class ::=
         LBRACE PUBLIC STATIC VOID MAIN 
         LPAREN STRING LBRACKET RBRACKET ID:param RPAREN
        
-        block_statement:b 
+        LBRACE block_statement:b RBRACE
           {:
           	RESULT = new MainClass(name.line, name.pos, name.lexeme, param.lexeme, b);
           :}
@@ -143,8 +154,122 @@ main_class ::=
           :}
     ;
     
+topclass_decl ::=
+		CLASS id:i LBRACE method_decls:m RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new TopClassDecl(i.getLine(), i.getPos(), i.getLexeme(), new LinkedList<VarDecl>(), m);
+		:}
+	|	CLASS id:i LBRACE RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new TopClassDecl(i.getLine(), i.getPos(), i.getLexeme(), new LinkedList<VarDecl>(), null);
+		:}
+	;
+	
+class_decls ::=
+		topclass_decl:t
+		{:
+			LinkedList<IClassDecl> list = new LinkedList<IClassDecl>();
+			list.add(t);
+			RESULT = list;
+		:}
+	|	class_decls:list topclass_decl:t
+		{:
+			list.add(t);
+			RESULT = list;
+		:}
+	;
+
+method_decl	::=
+		PUBLIC:op type:t id:i LPAREN formals:f RPAREN LBRACE statement_list:s return_exp:a RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), f, new LinkedList<VarDecl>(), s, a); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN RPAREN LBRACE statement_list:s return_exp:a RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), null, new LinkedList<VarDecl>(), s, a); 
+		:}
+	;
+	
+method_decls ::=
+		method_decl:m
+		{:
+			LinkedList<MethodDecl> list = new LinkedList<MethodDecl>();
+			list.add(m);
+			RESULT = list;
+		:}
+	|	method_decls:list method_decl:m
+		{:
+			list.add(m);
+			RESULT = list;
+		:}
+	;
+	
+return_exp	::=
+		RETURN exp:a
+		{:
+			RESULT = a;
+		:}
+	|
+	;
+    
+formal ::=
+		type:t id:i
+		  {:
+		    RESULT = new Formal(t.getLine(), t.getPos(), t, i.getLexeme());
+		  :}
+	;
+	
+formals	::=
+		formal:f
+		{:
+		  LinkedList<Formal> list = new LinkedList<Formal>();
+		  list.add(f);
+		  RESULT = list;
+		:}
+	|   formals:list COMMA formal:a
+		{:
+		  list.add(a);
+		  RESULT = list;
+		:}
+	;
+	
+type	::=
+		BOOLEAN:t
+		{:
+			RESULT = new BoolType(t.line, t.pos);
+		:}
+	|	BYTE:t
+		{:
+			RESULT = new ByteType(t.line, t.pos);
+		:}
+	|	INT:t
+		{:
+			RESULT = new IntType(t.line, t.pos);
+		:}
+	|	VOID:t
+		{:
+			RESULT = new VoidType(t.line, t.pos);
+		:}
+	|	MEGGYCOLOR:t
+		{:
+			RESULT = new ColorType(t.line, t.pos);
+		:}
+	|	MEGGYBUTTON:t
+		{:
+			RESULT = new ButtonType(t.line, t.pos);
+		:}
+	|	MEGGYTONE:t
+		{:
+			RESULT = new ToneType(t.line, t.pos);
+		:}
+	;
+    
 statement ::= 
-        block_statement:b
+        LBRACE block_statement:b RBRACE
           {:
             RESULT = b;
           :}
@@ -168,7 +293,7 @@ statement ::=
 		  {:
 		  	//System.out.println("If Expression: " + a.getClass().getSimpleName());
             //ELSE statement is just a bogus empty block statement
-		  	RESULT = new IfStatement(op.line, op.pos, a, s, new BlockStatement(op.line, op.pos, new LinkedList<IStatement>()));
+		  	RESULT = new IfStatement(op.line, op.pos, a, s, null);
 		  :}
 	|	IF:op LPAREN exp:a RPAREN statement:s1 ELSE statement:s2
 		  {:
@@ -182,33 +307,30 @@ statement ::=
 	;
 
 block_statement ::=
-          LBRACE:op statement_list:s RBRACE
+          statement_list:s
 	  	  {:
 			if(s != null)
-				RESULT = new BlockStatement(op.line, op.pos, s);
+				RESULT = new BlockStatement(0, 0, s);
 			else
-				RESULT = new BlockStatement(op.line, op.pos, new LinkedList<IStatement>());
+				RESULT = new BlockStatement(0, 0, new LinkedList<IStatement>());
 		  :}
-    |     LBRACE:op RBRACE
-          {: 
-          	RESULT = new BlockStatement(op.line, op.pos, new LinkedList<IStatement>()); 
-          :}
+    |     
     ;
 	
 statement_list ::=
-		statement_list:list statement:s
-		  {:
-			  if(s != null) {
-	            list.add(s);
-	          } 
-	          RESULT = list;
-		  :}
-	|	statement:s
+		statement:s
 		  {:
 			LinkedList<IStatement> list = new LinkedList<IStatement>();
             if(s != null)
             	list.add(s);
             RESULT = list;
+		  :}
+	|	  statement_list:list statement:s
+		  {:
+			if(s != null) {
+	          list.add(s);
+	        } 
+	        RESULT = list;
 		  :}
 	;
 	
@@ -291,7 +413,8 @@ exp ::=
 	|	THIS:i
 		  {: 
 		  	// HOW DO WE HANDLE VALUE FOR THIS CONSTRUCTOR?
-			RESULT = new ThisLiteral(i.line, i.pos, i.lexeme, i.pos);
+		  	// value an offset or something?
+			RESULT = new ThisLiteral(i.line, i.pos, i.lexeme, 0);
 		  :}
 	|	NEW:op id:i LPAREN RPAREN
 	 	  {: 

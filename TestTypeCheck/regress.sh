@@ -20,7 +20,7 @@ do
     java -jar ../MJ.jar $filename >& t1
 
     # Make AVR assembly from our test program using reference compiler
-    java -jar MJ_PA3.jar $filename >& t2
+    java -jar MJ_PA4.jar $filename >& t2
 
     results=$(diff t1 t2)
     echo "$results"
@@ -36,6 +36,6 @@ do
     echo "============================="
 done
 
-createPng
+#createPng
 # clean up the files afterwards
 rm t1 t2 *.s *.png *.class *.dot
