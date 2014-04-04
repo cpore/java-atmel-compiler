@@ -43,7 +43,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outAndExp(AndExp node)
 	{
-	
+
 	}
 
 	@Override
@@ -345,6 +345,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void visitCallStatement(CallStatement node)
 	{
 		inCallStatement(node);
+		
 		if(node.getExp() != null)
 		{
 			node.getExp().accept(this);
@@ -355,7 +356,38 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			{
 				e.accept(this);
 			}
+			out.println("    #### function call");
+			out.println("    # put parameters into appropriate registers");
+			
+			int regNum = 24 -(2*copy.size());
+			String className = ((NewExp) node.getExp()).getId();
+			for(IExp e : copy){
+				if(e instanceof ByteCast ||
+				e instanceof TrueLiteral ||
+				e instanceof FalseLiteral ||
+				e instanceof ColorLiteral ||
+				e instanceof MeggyGetPixel){
+					out.println("    # load a one byte expression off stack");
+					out.println("    pop    " + regNum);
+				}else{
+					out.println("    # load a two byte expression off stack");
+					out.println("    pop    " + regNum);
+					out.println("    pop    " + (regNum-1));
+				}
+				regNum += 2;
+			}
+			
+			out.println("    # receiver will be passed as first param");
+			out.println("    # load a two byte expression off stack");
+			out.println("    pop    r24");
+			out.println("    pop    r25");
+			out.println();
+			
+			out.println("    call    " + className + node.getId());
+			out.println();
 		}
+
+
 		outCallStatement(node);
 	}
 
@@ -416,9 +448,9 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	{
 		// This code assumes that node.getIntValue() will fit into
 		// A byte. Do we need to check for this in the type checker?
-		out.println("    # Load Color expression " + node.getLexeme());
+		out.println("    # Color expression " + node.getLexeme());
 		out.println("    ldi    r22, " + node.getIntValue());
-		out.println("    # push two byte expression onto stack");
+		out.println("    # push one byte expression onto stack");
 		out.println("    push   r22");
 		out.println();
 		out.flush();
@@ -484,12 +516,12 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			node.getLExp().accept(this);
 		}
 
-		
+
 		if(node.getRExp() != null)
 		{
 			node.getRExp().accept(this);
 		}
-		
+
 		if(node.getRExp() instanceof ByteCast ||
 				node.getRExp() instanceof TrueLiteral ||
 				node.getRExp() instanceof FalseLiteral ||
@@ -512,13 +544,12 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		else
 			loadLInt();
 
-
 		//Get necessary labels
 		String equalLbl = new Label().toString();
 		String notEqualLbl = new Label().toString();
 		out.println("    cp     r24, r18");//Compare
-		out.println("    brne " + notEqualLbl);
-		out.println("    cp    r25, r19");//Compare with carry
+		//out.println("    brne " + notEqualLbl);
+		out.println("    cpc    r25, r19");//Compare with carry
 		out.println("    #Branch if not equals");//Aka Z = 0;
 		out.println("    brne " + notEqualLbl);
 		out.println("    ldi    r24, 1");
@@ -699,7 +730,6 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    push   r24");
 		out.println();
 		out.flush();
-		//defaultOut(node);
 	}
 
 	@Override
@@ -769,6 +799,43 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		{
 			node.getRExp().accept(this);
 		}
+
+		if(node.getRExp() instanceof ByteCast){
+			loadRByte();
+			promoteRByte();
+		}
+		else
+			loadRInt();
+
+		if(node.getLExp() instanceof ByteCast){
+			loadLByte();
+			promoteLByte();
+		}
+		else
+			loadLInt();
+
+		//Get necessary labels
+		String notLtLbl = new Label().toString();
+		String ltLbl = new Label().toString();
+		out.println("    cp    r24, r18");//Compare
+		out.println("    cpc   r25, r19");//Compare with carry
+		out.println("    #Branch if less than");//Aka Z = 0;
+		out.println("    brlt " + ltLbl);
+		out.println();
+		out.println("    # load false");
+		out.println("    ldi    r24, 0");
+		out.println("    push   r24");//push True
+		out.println("    jmp    " + notLtLbl);
+		out.println();
+		out.println("    # load true ");
+		out.println(ltLbl + ":");
+		out.println("    ldi    r24, 1");
+		out.println("    push   r24");//push TRUE
+		out.println(notLtLbl + ":");
+		out.println();//Done
+		//The next command will pop to read the value.
+
+		out.flush();
 		outLtExp(node);
 	}
 
@@ -779,6 +846,32 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMainClass(MainClass node)
 	{
+		// This adds the epilog
+		//System.out.println("Generate epilog using avrF.rtl.s");
+		InputStream mainEpilogue=null;
+		BufferedReader reader=null;
+		try {
+			mainEpilogue = this.getClass().getClassLoader().getResourceAsStream("avrF.rtl.s");
+			reader = new BufferedReader(new InputStreamReader(mainEpilogue));
+
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				out.println(line);
+			}
+			out.println();
+		} catch ( Exception e2) {
+			e2.printStackTrace();
+		}
+		finally{
+			try{
+				if(mainEpilogue!=null) mainEpilogue.close();
+				if(reader!=null) reader.close();
+				out.flush();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		defaultOut(node);
 	}
 
@@ -976,7 +1069,16 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outMeggyToneStart(MeggyToneStart node)
 	{
-		defaultOut(node);
+		out.println("    ### Meggy.toneStart(tone, time_ms) call");
+		out.println("    # load a two byte expression off stack");
+		out.println("    pop    r22");
+		out.println("    pop    r23");
+		out.println("    # load a two byte expression off stack");
+		out.println("    pop    r24");
+		out.println("    pop    r25");
+		out.println("    call   _Z10Tone_Startjj");
+		out.println();
+		out.flush();
 	}
 
 	public void visitMeggyToneStart(MeggyToneStart node)
@@ -1008,6 +1110,17 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void visitMethodDecl(MethodDecl node)
 	{
 		inMethodDecl(node);
+		String name = ((TopClassDecl)node.parent()).getName() + node.getName();
+		int pushes = 0;
+
+		out.println("    .text");
+		out.println(".global " + name);
+		out.println("    .global  " + name +", @function");
+		out.println(name + ":");
+		// push old FP
+		out.println("    push   r29");
+		out.println("    push   r28");
+		out.flush();
 		if(node.getType() != null)
 		{
 			node.getType().accept(this);
@@ -1018,25 +1131,128 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			{
 				e.accept(this);
 			}
+
+			// make space for frame (push 0s for each formal)
+			out.println("    # make space for locals and params");
+			out.println("    ldi    r30, 0"); 
+
+			// space for "this"
+			out.println("    push   r30");
+			out.println("    push   r30");
+			pushes = 2;
+			out.flush();
+
+			for(Formal f: copy){
+				IType type = f.getType();
+				if(type instanceof IntType || type instanceof ToneType){
+					// push int sized formal
+					out.println("    push   r30");
+					out.println("    push   r30");
+					pushes +=2;
+				}else if(type instanceof VoidType){
+					// do nothing
+				}else{
+					// push byte sized formal
+					out.println("    push   r30");
+					pushes++;
+				}
+			}
+			out.flush();
+			out.println();
+
+			out.println("    # Copy stack pointer to frame pointer");
+			out.println("    in     r28, __SP_L__");
+			out.println("    in     r29, __SP_H__");
+			out.println();
+
+			// offset for "this"
+			out.println("    # save off parameters");
+			out.println("    std    Y + 2, r25");
+			out.println("    std    y + 1, r24");
+			out.flush();
+
+			int offset = 3;
+			int regNum = 22;
+			for(Formal f: copy){
+				IType type = f.getType();
+				if(type instanceof IntType || type instanceof ToneType){
+					// push int sized formal
+					out.println("    std    Y + " + (offset+1) + ", r" + (regNum+1));
+					out.println("    std    Y + " + offset + ", r" + regNum);
+					offset += 2;
+				}else if(type instanceof VoidType){
+					// do nothing
+				}else{
+					// push byte sized formal
+					out.println("    std    Y + " + (offset) + ", r" + (regNum));
+					offset++;
+				}
+				regNum -= 2;
+			}
+			out.println("/* done with function " + name + " prologue */");
+			out.println();
+			out.println();
+
+			out.flush();
 		}
+
+
+
+		// TODO for PA5 handle variable declarations;
 		{
 			List<VarDecl> copy = new ArrayList<VarDecl>(node.getVarDecls());
 			for(VarDecl e : copy)
 			{
 				e.accept(this);
 			}
+			for(VarDecl v: copy){
+				out.println(v.getName());
+			}
+
 		}
+
+
 		{
 			List<IStatement> copy = new ArrayList<IStatement>(node.getStatements());
 			for(IStatement e : copy)
 			{
 				e.accept(this);
 			}
+
 		}
+
+
 		if(node.getExp() != null)
 		{
 			node.getExp().accept(this);
 		}
+
+		out.println("/* epilogue start for " + name + " */");
+		// TODO handle return value here
+		if(node.getType() instanceof IntType ||	node.getType() instanceof ToneType){
+			out.println("    # handle return value");
+			out.println("    # load a two byte expression off stack");
+			out.println("    pop    r30");
+			out.println("    pop    r30");
+		}else if(node.getType() instanceof VoidType){
+			out.println("    # no return value");
+		}else{
+			out.println("    # handle return value");
+			out.println("    # load a one byte expression off stack");
+			out.println("    pop    r30");
+		}
+
+		out.println("    # pop space off stack for parameters and locals");
+		for(int i=0; i<pushes; i++)
+			out.println("    pop    r30");
+
+		out.println("    # restoring the frame pointer");
+		out.println("    pop    r28");
+		out.println("    pop    r29");
+		out.println("    ret");
+		out.println("    .size " + name + ", .-" + name);
+		out.println();
+		out.flush();
 		outMethodDecl(node);
 	}
 
@@ -1059,12 +1275,12 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			node.getLExp().accept(this);
 		}
 
-		
+
 		if(node.getRExp() != null)
 		{
 			node.getRExp().accept(this);
 		}
-		
+
 		if(node.getRExp() instanceof ByteCast){
 			//System.out.println("Found RByte");
 			loadRByte();
@@ -1081,7 +1297,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			loadLInt();
 		}
 
-				
+
 		out.println("    # Do INT sub operation");
 		out.println("    sub r24, r18");
 		out.println("    sbc r25, r19");
@@ -1165,6 +1381,18 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void visitNewExp(NewExp node)
 	{
 		inNewExp(node);
+
+		out.println("    # NewExp");
+		out.println("    ldi    r24, lo8(0)");
+		out.println("    ldi    r25, hi8(0)");
+		out.println("     # allocating object of size 0 on heap");
+		out.println("    call    malloc");
+		out.println("    # push object address");
+		out.println("    # push two byte expression onto stack");
+		out.println("    push   r25");
+		out.println("    push   r24");
+		out.println();
+		out.flush();
 		outNewExp(node);
 	}
 
@@ -1186,7 +1414,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		{
 			node.getExp().accept(this);
 		}
-		
+
 		if(node.getExp() instanceof ByteCast){
 			loadLByte();
 			promoteLByte();
@@ -1198,7 +1426,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    #Copy Registers");
 		out.println("    mov r18, r24");
 		out.println("    mov r19, r25");
-		
+
 		out.println("    sub r24, r18");
 		out.println("    sbc r25, r19");
 		out.println("    sub r24, r18");
@@ -1209,7 +1437,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    push r24");
 		out.println();
 		out.flush();
-	
+
 		outNegExp(node);
 	}
 
@@ -1270,8 +1498,8 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		}
 		else
 			loadRInt();
-		
-		
+
+
 		if(node.getLExp() instanceof ByteCast){
 			//System.out.println("Found LByte");
 			loadLByte();
@@ -1424,32 +1652,6 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outProgram(Program node)
 	{
-		// This adds the epilog
-		//System.out.println("Generate epilog using avrF.rtl.s");
-		InputStream mainEpilogue=null;
-		BufferedReader reader=null;
-		try {
-			mainEpilogue = this.getClass().getClassLoader().getResourceAsStream("avrF.rtl.s");
-			reader = new BufferedReader(new InputStreamReader(mainEpilogue));
-
-			String line = null;
-			while ((line = reader.readLine()) != null) {
-				out.println(line);
-			}
-			out.println();
-		} catch ( Exception e2) {
-			e2.printStackTrace();
-		}
-		finally{
-			try{
-				if(mainEpilogue!=null) mainEpilogue.close();
-				if(reader!=null) reader.close();
-				out.flush();
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
 		defaultOut(node);
 	}
 
@@ -1495,7 +1697,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outToneExp(ToneLiteral node)
 	{
-		defaultOut(node);
+		out.println("    # Push " + node.getLexeme() + " onto the stack.");
+		out.println("    ldi    r24,lo8("+node.getIntValue()+")");
+		out.println("    ldi    r25,hi8("+node.getIntValue()+")");
+		out.println("    # push two byte expression onto stack");
+		out.println("    push   r25");
+		out.println("    push   r24");
+		out.println();
+		out.flush();
 	}
 
 	@Override
@@ -1642,7 +1851,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		//After we get the expression, there will be a bool
 		//on the stack that we can test
 		out.println("    #### while statement");
-		
+
 		out.println();
 
 		out.println("    # if not(condition)");

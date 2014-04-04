@@ -65,8 +65,8 @@ public class MJDriver {
           System.out.println("Printing symbol table to " + filename + ".ST.dot");
           
           // Do type checking
-          symtable.SymTable globalST = new symtable.SymTable();
-          ast_root.accept(new CheckTypes(globalST));
+    //      symtable.SymTable globalST = new symtable.SymTable();
+    //      ast_root.accept(new CheckTypes(globalST));
           //System.out.println("Performing Type-Checking on " + filename);
           
           // generate AVR code

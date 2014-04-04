@@ -919,7 +919,16 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outMeggyToneStart(MeggyToneStart node)
 	{
-		defaultOut(node);
+		Type toneExpType = this.mCurrentST.getExpType(node.getToneExp());
+		Type durationExpType = this.mCurrentST.getExpType(node.getDurationExp());
+		if (toneExpType!=Type.TONE || durationExpType!=Type.INT){
+			throw new SemanticException(
+					"Invalid argument type for method MeggyToneStart",
+					node.getToneExp().getLine(),
+					node.getToneExp().getPos());
+		}
+
+		this.mCurrentST.setExpType(node, Type.TONE);
 	}
 
 	public void visitMeggyToneStart(MeggyToneStart node)
@@ -1250,7 +1259,7 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outToneExp(ToneLiteral node)
 	{
-		defaultOut(node);
+		mCurrentST.setExpType(node, Type.TONE);
 	}
 
 	@Override

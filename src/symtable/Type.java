@@ -8,6 +8,7 @@ public class Type
 {
   public static final Type BOOL = new Type();
   public static final Type INT = new Type();
+  public static final Type TONE = new Type();
   public static final Type BYTE = new Type();
   public static final Type COLOR = new Type();
   public static final Type BUTTON = new Type();
@@ -28,6 +29,11 @@ public class Type
     if(this == INT)
     {
       return "INT";
+    }
+    
+    if(this == TONE)
+    {
+      return "TONE";
     }
 
     if(this == BOOL)
@@ -58,6 +64,7 @@ public class Type
   
   public int getAVRTypeSize() {
       if(this == INT) { return 2; }
+      if(this == TONE) { return 2; }
       if(this == BOOL) { return 1; }
       if(this == BYTE) { return 1; }
       if(this == COLOR) { return 1; }

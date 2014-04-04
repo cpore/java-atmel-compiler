@@ -17,7 +17,9 @@ import ast.node.Node;
  */
 public class SymTable {
     private final HashMap<Node,Type> mExpType = new HashMap<Node,Type>();
-	private Deque<Scope> mScopeStack;
+	private Scope mGlobalScope;
+	private Scope mScope;
+    private Deque<Scope> mScopeStack;
 
     public SymTable() {
         /* WRITE ME */
@@ -34,15 +36,25 @@ public class SymTable {
     	
     	return null;
     }
+    
+    /**
+     * For first time a named scope is created like a MethodSTE. 
+     */
+    public void insertAndPushScope(NamedScopeSTE ste){
+    	
+    }
 
     /** Lookup a symbol in innermost scope only.
      * return null if the symbol is not found
      */
     public STE lookupInnermost(String sym) {
-        Scope currentScope = mScopeStack.peek();
-        return currentScope.lookupInnermost(sym);
+    	if(mScopeStack.contains(sym)){
+    		Scope currentScope = mScopeStack.peek();
+    		return currentScope.lookup(sym);
+    	}else
+    		return null;
     }
- 
+
     /** When inserting an STE will just insert
      * it into the scope at the top of the scope stack.
      */
@@ -59,7 +71,7 @@ public class SymTable {
     }
     
     public void popScope() {
-        /* WRITE ME */
+        mScopeStack.pop();
     }
     
     public void setExpType(Node exp, Type t)
