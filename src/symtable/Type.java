@@ -13,6 +13,8 @@ public class Type
   public static final Type COLOR = new Type();
   public static final Type BUTTON = new Type();
   public static final Type VOID = new Type();
+  public static final Type CLASS = new Type();
+
 
   private Type()
   {
@@ -55,8 +57,16 @@ public class Type
     {
       return "BUTTON";
     }
-
     
+    if(this == VOID)
+    {
+      return "VOID";
+    }
+
+    if(this == CLASS)
+    {
+      return "CLASS";
+    }
 /*
 */
     return "MAINCLASS;";

@@ -16,14 +16,17 @@ import ast.node.*;
 
 import java.util.*;
 
+import symtable.SymTable;
 import label.Label;
 
 public class AVRgenVisitor extends DepthFirstVisitor {
 	private PrintWriter out;
+	private SymTable mCurrentST;
 
 	/** Constructor takes a PrintWriter, and stores in instance var. */
-	public AVRgenVisitor(PrintWriter out) {
+	public AVRgenVisitor(PrintWriter out, SymTable st) {
 		this.out = out;
+		mCurrentST = st;
 	}
 
 	public void defaultIn(Node node)

@@ -98,6 +98,7 @@ non terminal LinkedList<Formal> formals;
 non terminal IExp return_exp;
 non terminal IClassDecl topclass_decl;
 non terminal LinkedList<IClassDecl> class_decls;
+non terminal CallStatement call_stmt;
 
 /* Declare precedence and associativity  here */
 
@@ -187,10 +188,35 @@ method_decl	::=
 			// VarDecl is empty list since we are not dealing with them in pa4
 			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), f, new LinkedList<VarDecl>(), s, a); 
 		:}
+	| 	PUBLIC:op type:t id:i LPAREN formals:f RPAREN LBRACE return_exp:a RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), f, new LinkedList<VarDecl>(), new LinkedList<IStatement>(), a); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN formals:f RPAREN LBRACE statement_list:s RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), f, new LinkedList<VarDecl>(), s, null); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN RPAREN LBRACE statement_list:s RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), new LinkedList<Formal>(), new LinkedList<VarDecl>(), s, null); 
+		:}
 	| 	PUBLIC:op type:t id:i LPAREN RPAREN LBRACE statement_list:s return_exp:a RBRACE
 		{:
 			// VarDecl is empty list since we are not dealing with them in pa4
-			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), null, new LinkedList<VarDecl>(), s, a); 
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), new LinkedList<Formal>(), new LinkedList<VarDecl>(), s, a); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN RPAREN LBRACE return_exp:a RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), new LinkedList<Formal>(), new LinkedList<VarDecl>(), new LinkedList<IStatement>(), a); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN RPAREN LBRACE RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), new LinkedList<Formal>(), new LinkedList<VarDecl>(), new LinkedList<IStatement>(), null); 
 		:}
 	;
 	
@@ -209,11 +235,10 @@ method_decls ::=
 	;
 	
 return_exp	::=
-		RETURN exp:a
+		RETURN exp:a SEMI
 		{:
 			RESULT = a;
 		:}
-	|
 	;
     
 formal ::=
@@ -285,9 +310,9 @@ statement ::=
 		  {:
 		  	RESULT = new MeggyDelay(op.line, op.pos, a);
 		  :}
-	|	call_exp:a SEMI
+	|	call_stmt:a SEMI
 		  {:
-		  	RESULT = new CallStatement(a.getLine(), a.getPos(), a.getExp(), a.getId(), a.getArgs());
+		  	RESULT = a;
 		  :}
 	|	IF:op LPAREN exp:a RPAREN statement:s
 		  {:
@@ -303,6 +328,17 @@ statement ::=
 	|	WHILE:op LPAREN exp:a RPAREN statement:s
 		  {:
 		  	RESULT = new WhileStatement(op.line, op.pos, a, s);
+		  :}
+	;
+	
+call_stmt ::=
+		exp:a DOT:op id:i LPAREN RPAREN
+		  {:
+		    RESULT = new CallStatement(op.line, op.pos, a, i.getLexeme(), new LinkedList<IExp>());
+		  :}
+	|	exp:a DOT:op id:i LPAREN opt_exp:b RPAREN
+		  {:
+		    RESULT = new CallStatement(op.line, op.pos, a, i.getLexeme(), b);
 		  :}
 	;
 

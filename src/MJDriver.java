@@ -61,20 +61,6 @@ public class MJDriver {
           ast_root.accept(new DotVisitor(new PrintWriter(astout)));
           System.out.println("Printing AST to " + filename + ".ast.dot");
 
-          // bogus print statement to match reference compiler
-          System.out.println("Printing symbol table to " + filename + ".ST.dot");
-          
-          // Do type checking
-    //      symtable.SymTable globalST = new symtable.SymTable();
-    //      ast_root.accept(new CheckTypes(globalST));
-          //System.out.println("Performing Type-Checking on " + filename);
-          
-          // generate AVR code
-          java.io.PrintStream avrsout = new java.io.PrintStream(new java.io.FileOutputStream(filename + ".s"));
-          ast_root.accept(new AVRgenVisitor(new PrintWriter(avrsout)));
-          //System.out.println("Printing Atmel assembly to " + filename + ".s");
-
-          /* not doing symbol tables yet
           // create the symbol table
           BuildSymTable stVisitor = new BuildSymTable();
           ast_root.accept(stVisitor);
@@ -86,7 +72,8 @@ public class MJDriver {
             new java.io.PrintStream(
                 new java.io.FileOutputStream(filename + ".ST.dot"));
           System.out.println("Printing symbol table to " + filename + ".ST.dot");
-          globalST.outputDot(STout);
+          //TODO output symbol table
+          //globalST.outputDot(STout);
           
                  
           // perform type checking 
@@ -94,7 +81,8 @@ public class MJDriver {
           
           // Determine whether to do register allocation or not.
           if ( args.length == 2 && args[0].equals("--regalloc") ) {
-              // trying out register allocation
+              /*
+        	  // trying out register allocation
               AVRregAlloc regVisitor = new AVRregAlloc(globalST);
               ast_root.accept(regVisitor);
               
@@ -105,7 +93,7 @@ public class MJDriver {
                 ast_root.accept(new DotVisitorWithMap(new PrintWriter(asttempout),
                         regVisitor.getTempMap()));
                 System.out.println("Printing AST to " + filename + ".ast.temp.dot");
-            
+            */
           } else {
             // determine how to layout variables in AVR program
             ast_root.accept(new AVRallocVars(globalST));
@@ -117,7 +105,7 @@ public class MJDriver {
                       new java.io.FileOutputStream(filename + ".s"));
           ast_root.accept(new AVRgenVisitor(new PrintWriter(avrsout),globalST));
           System.out.println("Printing Atmel assembly to " + filename + ".s");
-          */
+          
 
         } catch(exceptions.SemanticException e) {
             System.err.println(e.getMessage());
