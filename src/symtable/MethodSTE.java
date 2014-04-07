@@ -1,42 +1,32 @@
 package symtable;
 
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 import ast.node.BoolType;
 import ast.node.ButtonType;
 import ast.node.ByteType;
 import ast.node.ColorType;
-import ast.node.Formal;
 import ast.node.IType;
 import ast.node.IntType;
 import ast.node.ToneType;
 import ast.node.VoidType;
 
 public class MethodSTE extends NamedScopeSTE{
-	private HashMap<String, Type> mSignature;
-	private LinkedList<Formal> formals;
+	private ArrayList<Type> mSignature;
 	private Type returnType;
 	private int frameSize = 0;
+	private String className;
 
 	public MethodSTE(String name) {
 		super(name);
-		mSignature = new HashMap<String, Type>();
+		mSignature = new ArrayList<Type>();
 	}
 
-	public void addFormal(String name, IType type){
-		mSignature.put(name, convertType(type));
+	public void addFormal(IType type){
+		mSignature.add(convertType(type));
 	}
 
-	public void addFormals(LinkedList<Formal> formals){
-		this.formals = formals;
-	}
-	/*
-	public void setReturnType(IType type){
-		returnType = type;
-	}*/
-
-	public HashMap<String, Type> getSignature(){
+	public ArrayList<Type> getSignature(){
 		return mSignature;
 	}
 
@@ -45,11 +35,23 @@ public class MethodSTE extends NamedScopeSTE{
 	}
 
 	public void setFrameSize(int size){
-
+		frameSize = size;
 	}
 
 	public int getFrameSize(){
 		return frameSize;
+	}
+	
+	public void setClassName(String id){
+		className = id;
+	}
+	
+	public String getClassName(){
+		return className;
+	}
+	
+	public String getAVRLabel(){
+		return className+getName();
 	}
 
 	// THIS MAY BE BAD
@@ -75,4 +77,5 @@ public class MethodSTE extends NamedScopeSTE{
 		else
 			return Type.CLASS;
 	}
+	
 }

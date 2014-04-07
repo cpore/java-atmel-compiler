@@ -499,11 +499,11 @@ public class AVRallocVars extends DepthFirstVisitor{
     public void outFormal(Formal node)
     {
         //TODO testing
-    	VarSTE formal = (VarSTE) mCurrentST.lookup(node.getName());
+    	VarSTE formal = (VarSTE) mCurrentST.lookupInnermost(node.getName());
         Type type = mCurrentST.getExpType(node.getType());
         formal.setLocation("Y", offset);
         offset += type.getAVRTypeSize();
-        System.out.println(formal.getOffset());
+        //System.out.println(formal.getOffset());
     	defaultOut(node);
     }
 
@@ -825,9 +825,13 @@ public class AVRallocVars extends DepthFirstVisitor{
 
     public void inMethodDecl(MethodDecl node)
     {
+    	mCurrentST.pushScope(node.getName());
     	//allocate space for implicit “this” parameter at offset
     	//increment offset with size of “this” (2: reg pair) 
     	VarSTE receiver = (VarSTE) mCurrentST.lookupInnermost("this");
+    	if(receiver == null)
+    		System.out.println("COULD NOT FIND \"this\"");
+    	receiver.setType(null);
     	receiver.setLocation("Y", offset);
     	offset += 2;
     	//TODO testing
@@ -842,7 +846,7 @@ public class AVRallocVars extends DepthFirstVisitor{
     	mste.setFrameSize(offset);
     	// reset offset for next node
     	offset = 1;
-    	defaultOut(node);
+    	mCurrentST.popScope();
     }
 
     @Override
@@ -1122,12 +1126,13 @@ public class AVRallocVars extends DepthFirstVisitor{
 
     public void inTopClassDecl(TopClassDecl node)
     {
-        defaultIn(node);
+    	//TODO
+    	mCurrentST.pushScope(node.getName());
     }
 
     public void outTopClassDecl(TopClassDecl node)
     {
-        defaultOut(node);
+        mCurrentST.popScope();
     }
 
     @Override

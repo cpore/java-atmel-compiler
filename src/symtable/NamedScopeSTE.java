@@ -5,7 +5,7 @@ public class NamedScopeSTE extends STE{
 	
 	public NamedScopeSTE(String name) {
 		super(name);
-		mScope = new Scope();
+		mScope = new Scope(name);
 		
 	}
 	

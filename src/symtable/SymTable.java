@@ -23,7 +23,7 @@ public class SymTable {
 
     public SymTable() {
     	mScopeStack = new ArrayDeque<Scope>();
-    	mScope = new Scope();
+    	mScope = new Scope("mainClass");
     	mScopeStack.push(mScope);
     }
     
@@ -34,7 +34,7 @@ public class SymTable {
     public void insertAndPushScope(NamedScopeSTE ste){
     	insert(ste);
     	mScopeStack.push(ste.getScope());
-    	printStack();
+    	//printStack();
     }
     
     /** Lookup a symbol in this symbol table.
@@ -52,6 +52,15 @@ public class SymTable {
     public STE lookupInnermost(String sym) {
     		Scope currentScope = mScopeStack.peek();
     		return currentScope.lookupInnermost(sym);
+    }
+    
+    /**
+     * Returns the ID of the NamedScopeSTE associated
+     * withe the scope at the top of the stack
+     */
+    public String innermostId() {
+    		Scope currentScope = mScopeStack.peek();
+    		return currentScope.getParentId();
     }
 
     /** When inserting an STE will just insert

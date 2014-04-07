@@ -6,9 +6,11 @@ public class Scope {
 
 	private HashMap<String,STE> mDict;
 	private Scope mEnclosing;
+	private String parentId;
 
-	public Scope(){ 
+	public Scope(String id){ 
 		mDict = new HashMap<String, STE>();
+		parentId = id;
 		//mEnclosing = enclosing;
 	}
 
@@ -27,6 +29,10 @@ public class Scope {
 		}
 
 		return ste;
+	}
+	
+	public String getParentId(){
+		return parentId;
 	}
 	
 	public STE lookupInnermost(String sym) {

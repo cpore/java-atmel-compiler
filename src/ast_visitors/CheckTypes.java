@@ -85,6 +85,7 @@ public class CheckTypes extends DepthFirstVisitor
 {
 
 	private SymTable mCurrentST;
+	private ClassSTE cste;
 
 	public CheckTypes(SymTable st) {
 		if(st==null) {
@@ -342,23 +343,24 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outCallExp(CallExp node)
 	{
-		 //TODO
+		//TODO
+		MethodSTE mste = (MethodSTE) mCurrentST.lookup(node.getId());
 		//typeCheck(receiver Expr, id, Args) and produce returnType;
-		 //mCurrentST.setExpType(node, returnType); 
-		
+		mCurrentST.setExpType(node, mste.getReturnType()); 
+
 		//typeCheck(receiver, funcName, args):
 		//check that receiver is of type Class
 		//receiverInfo = lookupClass(receiverType.getClassName())
 		//invocationInfo = receiverInfo.getScope().lookup(funcName);
 		//if it isn’t there throw exception
-		
+
 		//get the Signature of the invoked receiver
 		//check argument count
 		//for each actual argument type check that it is equal to the formal type
 		//(think about widening when argument passing)
 		//the type of the call is the return type from the signature 
-		
-		defaultOut(node);
+
+		//defaultOut(node);
 	}
 
 	@Override
@@ -386,16 +388,24 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outCallStatement(CallStatement node)
 	{
-		 //TODO
+		MethodSTE mste = (MethodSTE) mCurrentST.lookup(node.getId());
+
+		if(mste == null){
+			throw new SemanticException(
+					"Method " + node.getId() + " does not exist in class type " + mCurrentST.getExpType(node.getExp()),
+					node.getLine(),
+					node.getPos());
+		}
+		//TODO
 		//typeCheck(receiver Expr, id, Args) and produce returnType;
 		// mCurrentST.setExpType(node, node.); 
-		
+
 		//typeCheck(receiver, funcName, args):
 		//check that receiver is of type Class
 		//receiverInfo = lookupClass(receiverType.getClassName())
 		//invocationInfo = receiverInfo.getScope().lookup(funcName);
 		//if it isn’t there throw exception
-		
+
 		//get the Signature of the invoked receiver
 		//check argument count
 		//for each actual argument type check that it is equal to the formal type
@@ -585,7 +595,8 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outFormal(Formal node)
 	{
-		defaultOut(node);
+		VarSTE vste  = (VarSTE) mCurrentST.lookup(node.getName());
+		mCurrentST.setExpType(node, vste.getType());
 	}
 
 	@Override
@@ -611,11 +622,18 @@ public class CheckTypes extends DepthFirstVisitor
 		VarSTE vste = (VarSTE) mCurrentST.lookup(node.getLexeme());
 		// check that it is in scope
 		// if it is not there, throw a semanticException
-		
+		if(mCurrentST.lookupInnermost(vste.getName()) == null){
+			throw new SemanticException(
+					"symbol not defined in : " + mCurrentST.innermostId(),
+					node.getLine(),
+					node.getPos());
+		}
+
+
 		// get its IdType, and, and mCurrentST.setExpType(node, IdType);
 		Type type = vste.getType();
 		mCurrentST.setExpType(node, type);
-		defaultOut(node);
+		//defaultOut(node);
 	}
 
 	@Override
@@ -999,9 +1017,9 @@ public class CheckTypes extends DepthFirstVisitor
 	{
 		// lookup method in class scope:
 		MethodSTE mste = (MethodSTE) mCurrentST.lookup(node.getName());
-		// check that it is not defined already in this class scope (no overloading)
+		// (Done in symbol table) check that it is not defined already in this class scope (no overloading)
 		// How is this even possible if Scope is a HashMap? Keys are replaced!
-		
+
 		//check that the return type in the signature conforms with
 		// the type of the return expression
 		mste.getReturnType();
@@ -1342,13 +1360,13 @@ public class CheckTypes extends DepthFirstVisitor
 	{
 		// create an instance variable of type classSTE, and give it the name of
 		// the class ( used for setting the type of “this” ) 
-		ClassSTE cste = new ClassSTE(node.getName());
+		cste = new ClassSTE(node.getName());
 		mCurrentST.pushScope(node.getName());
 	}
 
 	public void outTopClassDecl(TopClassDecl node)
 	{
-		defaultOut(node);
+		cste = null;
 	}
 
 	@Override

@@ -102,11 +102,11 @@ non terminal CallStatement call_stmt;
 
 /* Declare precedence and associativity  here */
 
+precedence left AND;
+precedence left LT;
 precedence left EQUAL;
 precedence left PLUS, MINUS;
 precedence left TIMES;
-precedence left AND;
-precedence left LT;
 precedence left DOT;
 precedence left ELSE;
 precedence left UMINUS, BYTE;

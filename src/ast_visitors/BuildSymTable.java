@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import exceptions.SemanticException;
 import symtable.ClassSTE;
 import symtable.MethodSTE;
 import symtable.SymTable;
@@ -225,18 +226,24 @@ public class BuildSymTable extends DepthFirstVisitor{
         MethodSTE mste = new MethodSTE(node.getName());
         // create a list of formal types
         LinkedList<Formal> list = node.getFormals();
-        for(Formal f: list){
-        	
-        	mste.addFormal(f.getName(), f.getType());
-        	System.out.println(f.getName() + ":" + mste.getSignature().get(f.getName()));
+        for(int i=0; i<list.size(); i++){
+        	mste.addFormal(list.get(i).getType());
+        	//System.out.println(list.get(i).getName() +":" + mste.getSignature().get(i));
         }
         
         // TODO create a signature: formatTypes -> return type
         
         // create a methodSTE with class&method name, node, signature
+        mste.setClassName(mCurrentST.innermostId());
         mste.setReturnType(node.getType());
-        mste.addFormals(list);
-        System.out.println("RETURN TYPE = " + mste.getReturnType());
+        //System.out.println("RETURN TYPE = " + mste.getReturnType());
+        
+        if(mCurrentST.lookupInnermost(mste.getName()) != null){
+        	throw new SemanticException(
+					"Redefined method symbol ID : " + mste.getName(),
+					node.getLine(),
+					node.getPos());
+        }
         //insert it and pushScope
         mCurrentST.insertAndPushScope(mste);
         //create and entry for "this"
@@ -348,7 +355,15 @@ public class BuildSymTable extends DepthFirstVisitor{
 
     public void inTopClassDecl(TopClassDecl node)
     {
-        mCurrentST.insertAndPushScope(new ClassSTE(node.getName()));
+        ClassSTE cste = new ClassSTE(node.getName());
+    	
+        if(mCurrentST.lookupInnermost(cste.getName()) != null){
+        	throw new SemanticException(
+					"Redefined class symbol ID : " + cste.getName(),
+					node.getLine(),
+					node.getPos());
+        }
+        mCurrentST.insertAndPushScope(cste);
     }
 
     public void outTopClassDecl(TopClassDecl node)
@@ -379,9 +394,10 @@ public class BuildSymTable extends DepthFirstVisitor{
 
     public void inVarDecl(VarDecl node)
     {
-        VarSTE vste = new VarSTE(node.getName());
+        //NO variables yet
+    	/*VarSTE vste = new VarSTE(node.getName());
         vste.setType(node.getType());
-    	mCurrentST.insert(vste);
+    	mCurrentST.insert(vste);*/
     }
 
     public void outVarDecl(VarDecl node)

@@ -16,12 +16,16 @@ import ast.node.*;
 
 import java.util.*;
 
+import symtable.MethodSTE;
 import symtable.SymTable;
+import symtable.Type;
+import symtable.VarSTE;
 import label.Label;
 
 public class AVRgenVisitor extends DepthFirstVisitor {
 	private PrintWriter out;
 	private SymTable mCurrentST;
+	private int currReg = 25;
 
 	/** Constructor takes a PrintWriter, and stores in instance var. */
 	public AVRgenVisitor(PrintWriter out, SymTable st) {
@@ -320,6 +324,8 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void visitCallExp(CallExp node)
 	{
 		inCallExp(node);
+		MethodSTE mste = (MethodSTE) mCurrentST.lookup(node.getId());
+		
 		if(node.getExp() != null)
 		{
 			node.getExp().accept(this);
@@ -331,6 +337,32 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 				e.accept(this);
 			}
 		}
+		
+		out.println("    #### function call");
+		out.println("    # put parameter values into appropriate registers");
+
+		int regNum = 25 -mste.getFrameSize();
+		for(Type type: mste.getSignature()){
+			if(type.getAVRTypeSize() == 1){
+				out.println("    # load a one byte expression off stack");
+				out.println("    pop    r" + regNum);
+			}else if(type.getAVRTypeSize() == 2){
+				out.println("    # load a two byte expression off stack");
+				out.println("    pop    r" + regNum);
+				out.println("    pop    r" + (regNum-1));
+			}
+			regNum += 2;
+		}
+
+		// handling "this"
+		out.println("    # receiver will be passed as first param");
+		out.println("    # load a two byte expression off stack");
+		out.println("    pop    r24");
+		out.println("    pop    r25");
+		out.println();
+
+		out.println("    call    " + mste.getAVRLabel());
+		out.println();
 		outCallExp(node);
 	}
 
@@ -348,7 +380,10 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void visitCallStatement(CallStatement node)
 	{
 		inCallStatement(node);
-		
+
+		MethodSTE mste = (MethodSTE) mCurrentST.lookup(node.getId());
+		if(mste == null)
+			System.out.println("Can't find " + node.getId() + " in Symbol table");
 		if(node.getExp() != null)
 		{
 			node.getExp().accept(this);
@@ -359,37 +394,38 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			{
 				e.accept(this);
 			}
-			out.println("    #### function call");
-			out.println("    # put parameters into appropriate registers");
-			
-			int regNum = 24 -(2*copy.size());
-			String className = ((NewExp) node.getExp()).getId();
-			for(IExp e : copy){
-				if(e instanceof ByteCast ||
-				e instanceof TrueLiteral ||
-				e instanceof FalseLiteral ||
-				e instanceof ColorLiteral ||
-				e instanceof MeggyGetPixel){
-					out.println("    # load a one byte expression off stack");
-					out.println("    pop    " + regNum);
-				}else{
-					out.println("    # load a two byte expression off stack");
-					out.println("    pop    " + regNum);
-					out.println("    pop    " + (regNum-1));
-				}
-				regNum += 2;
+		}
+		out.println("    #### function call");
+		out.println("    # put parameter values into appropriate registers");
+
+		int regNum = 0;
+		int framesize = mste.getFrameSize();
+		if(framesize %2 == 0)
+			regNum = 24 - framesize;
+		else
+			regNum = 25 - framesize;
+		
+		for(Type type: mste.getSignature()){
+			if(type.getAVRTypeSize() == 1){
+				out.println("    # load a one byte expression off stack");
+				out.println("    pop    r" + regNum);
+			}else if(type.getAVRTypeSize() == 2){
+				out.println("    # load a two byte expression off stack");
+				out.println("    pop    r" + regNum);
+				out.println("    pop    r" + (regNum-1));
 			}
-			
-			out.println("    # receiver will be passed as first param");
-			out.println("    # load a two byte expression off stack");
-			out.println("    pop    r24");
-			out.println("    pop    r25");
-			out.println();
-			
-			out.println("    call    " + className + node.getId());
-			out.println();
+			regNum += 2;
 		}
 
+		// handling "this"
+		out.println("    # receiver will be passed as first param");
+		out.println("    # load a two byte expression off stack");
+		out.println("    pop    r24");
+		out.println("    pop    r25");
+		out.println();
+
+		out.println("    call    " + mste.getAVRLabel());
+		out.println();
 
 		outCallStatement(node);
 	}
@@ -600,7 +636,17 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outFormal(Formal node)
 	{
-		defaultOut(node);
+		// offset for formals
+		VarSTE vste = (VarSTE) mCurrentST.lookup(node.getName());
+		
+		if(vste.getWidth() == 2){
+			out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()+1) + ", r" + currReg);
+			out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()) + ", r" + (currReg-1));
+		}else{
+			out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()) + ", r" + (currReg-1));
+		}
+		currReg -= 2;
+		out.flush();
 	}
 
 	@Override
@@ -616,12 +662,34 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void inIdLiteral(IdLiteral node)
 	{
-		defaultIn(node);
+		
+		out.println("    # IdExp");
+		out.println("    # load value for variable " + node.getLexeme());
+		VarSTE vste = (VarSTE) mCurrentST.lookup(node.getLexeme());
+		// TODO actually check if param!
+		out.println("    # variable is a local or param variable");
+		out.println();
+		
+		if(vste.getWidth() == 2){
+			out.println("    # load a two byte variable from base+offset");
+			out.println("    ldd    r24, " + vste.getbase() + " + " + (vste.getOffset()));
+			out.println("    ldd    r25, " + vste.getbase() + " + " + (vste.getOffset()+1));
+			out.println("    # push two byte expression onto stack");
+			out.println("    push   r25");
+			out.println("    push   r24");
+		}else{
+			out.println("    # load a one byte variable from base+offset");
+			out.println("    ldd    r24, " + vste.getbase() + " + " + (vste.getOffset()));
+			out.println("    # push one byte expression onto stack");
+			out.println("    push   r24");
+		}
+		currReg -= 2;
+		out.println();
+		out.flush();
 	}
 
 	public void outIdLiteral(IdLiteral node)
 	{
-		defaultOut(node);
 	}
 
 	@Override
@@ -827,7 +895,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println();
 		out.println("    # load false");
 		out.println("    ldi    r24, 0");
-		out.println("    push   r24");//push True
+		out.println("    push   r24");//push FALSE
 		out.println("    jmp    " + notLtLbl);
 		out.println();
 		out.println("    # load true ");
@@ -956,7 +1024,8 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    # load a two byte expression off stack");
 		out.println("    pop    r24");
 		out.println("    pop    r25");
-		out.println("    call _Z8delay_msj");
+		out.println("    call   _Z8delay_msj");
+		out.println();
 		out.flush();
 	}
 
@@ -1101,29 +1170,56 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void inMethodDecl(MethodDecl node)
 	{
-		defaultIn(node);
+		currReg = 25;
 	}
 
 	public void outMethodDecl(MethodDecl node)
 	{
-		defaultOut(node);
+		currReg = 25;
 	}
 
 	@Override
 	public void visitMethodDecl(MethodDecl node)
 	{
 		inMethodDecl(node);
-		String name = ((TopClassDecl)node.parent()).getName() + node.getName();
-		int pushes = 0;
+		MethodSTE mste = (MethodSTE) mCurrentST.lookup(node.getName());
+		String name = mste.getAVRLabel();
 
 		out.println("    .text");
 		out.println(".global " + name);
-		out.println("    .global  " + name +", @function");
+		out.println("    .type  " + name +", @function");
 		out.println(name + ":");
 		// push old FP
 		out.println("    push   r29");
 		out.println("    push   r28");
 		out.flush();
+
+		// make space for frame (push 0s for each formal)
+		out.println("    # make space for locals and params");
+		out.println("    ldi    r30, 0"); 
+
+		for(int i=1; i<mste.getFrameSize(); i++)
+			out.println("    push   r30");
+		out.flush();
+
+		out.println();
+
+		out.println("    # Copy stack pointer to frame pointer");
+		out.println("    in     r28, __SP_L__");
+		out.println("    in     r29, __SP_H__");
+		out.println();
+
+		out.println("    # save off parameters");
+
+		// offset for "this"
+		VarSTE vste = (VarSTE) mste.getScope().lookupInnermost("this");
+		if(vste == null)
+			System.out.println("COULD NOT FIND \"this\" IN AVRGEN");
+		out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()+1) + ", r" + currReg);
+		out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()) + ", r" + (currReg-1));
+		currReg -= 2;
+		out.flush();
+
 		if(node.getType() != null)
 		{
 			node.getType().accept(this);
@@ -1135,72 +1231,8 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 				e.accept(this);
 			}
 
-			// make space for frame (push 0s for each formal)
-			out.println("    # make space for locals and params");
-			out.println("    ldi    r30, 0"); 
 
-			// space for "this"
-			out.println("    push   r30");
-			out.println("    push   r30");
-			pushes = 2;
-			out.flush();
-
-			for(Formal f: copy){
-				IType type = f.getType();
-				if(type instanceof IntType || type instanceof ToneType){
-					// push int sized formal
-					out.println("    push   r30");
-					out.println("    push   r30");
-					pushes +=2;
-				}else if(type instanceof VoidType){
-					// do nothing
-				}else{
-					// push byte sized formal
-					out.println("    push   r30");
-					pushes++;
-				}
-			}
-			out.flush();
-			out.println();
-
-			out.println("    # Copy stack pointer to frame pointer");
-			out.println("    in     r28, __SP_L__");
-			out.println("    in     r29, __SP_H__");
-			out.println();
-
-			// offset for "this"
-			out.println("    # save off parameters");
-			out.println("    std    Y + 2, r25");
-			out.println("    std    y + 1, r24");
-			out.flush();
-
-			int offset = 3;
-			int regNum = 22;
-			for(Formal f: copy){
-				IType type = f.getType();
-				if(type instanceof IntType || type instanceof ToneType){
-					// push int sized formal
-					out.println("    std    Y + " + (offset+1) + ", r" + (regNum+1));
-					out.println("    std    Y + " + offset + ", r" + regNum);
-					offset += 2;
-				}else if(type instanceof VoidType){
-					// do nothing
-				}else{
-					// push byte sized formal
-					out.println("    std    Y + " + (offset) + ", r" + (regNum));
-					offset++;
-				}
-				regNum -= 2;
-			}
-			out.println("/* done with function " + name + " prologue */");
-			out.println();
-			out.println();
-
-			out.flush();
 		}
-
-
-
 		// TODO for PA5 handle variable declarations;
 		{
 			List<VarDecl> copy = new ArrayList<VarDecl>(node.getVarDecls());
@@ -1214,39 +1246,42 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 		}
 
+		out.println("/* done with function " + name + " prologue */");
+		out.println();
+		out.println();
 
 		{
 			List<IStatement> copy = new ArrayList<IStatement>(node.getStatements());
 			for(IStatement e : copy)
 			{
+				
 				e.accept(this);
+				
 			}
 
 		}
-
 
 		if(node.getExp() != null)
 		{
 			node.getExp().accept(this);
 		}
 
+		out.flush();
+
 		out.println("/* epilogue start for " + name + " */");
 		// TODO handle return value here
-		if(node.getType() instanceof IntType ||	node.getType() instanceof ToneType){
+		if(mste.getReturnType().getAVRTypeSize() == 2){
 			out.println("    # handle return value");
-			out.println("    # load a two byte expression off stack");
-			out.println("    pop    r30");
-			out.println("    pop    r30");
-		}else if(node.getType() instanceof VoidType){
+			loadLInt();
+		}else if(mste.getReturnType().getAVRTypeSize() == 0){
 			out.println("    # no return value");
 		}else{
 			out.println("    # handle return value");
-			out.println("    # load a one byte expression off stack");
-			out.println("    pop    r30");
+			loadLByte();
 		}
 
 		out.println("    # pop space off stack for parameters and locals");
-		for(int i=0; i<pushes; i++)
+		for(int i=1; i<mste.getFrameSize(); i++)
 			out.println("    pop    r30");
 
 		out.println("    # restoring the frame pointer");
@@ -1388,7 +1423,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    # NewExp");
 		out.println("    ldi    r24, lo8(0)");
 		out.println("    ldi    r25, hi8(0)");
-		out.println("     # allocating object of size 0 on heap");
+		out.println("    # allocating object of size 0 on heap");
 		out.println("    call    malloc");
 		out.println("    # push object address");
 		out.println("    # push two byte expression onto stack");
@@ -1635,6 +1670,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 				out.println(line);
 			}
 			out.println();
+			out.println();
 		} catch ( Exception e2) {
 			e2.printStackTrace();
 		}
@@ -1846,6 +1882,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		String whileBodyLbl = new Label().toString();
 		String whileExitLbl = new Label().toString();
 		inWhileStatement(node);
+		out.println("    #### while statement");
 		out.println(whileTestLbl + ":");
 		if(node.getExp() != null)
 		{
@@ -1853,7 +1890,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		}
 		//After we get the expression, there will be a bool
 		//on the stack that we can test
-		out.println("    #### while statement");
+		
 
 		out.println();
 
