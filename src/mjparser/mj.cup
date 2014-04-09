@@ -107,9 +107,10 @@ precedence left LT;
 precedence left EQUAL;
 precedence left PLUS, MINUS;
 precedence left TIMES;
+precedence left UMINUS, BYTE;
 precedence left DOT;
 precedence left ELSE;
-precedence left UMINUS, BYTE;
+
 
 
 /* Meggy Java Grammar */
@@ -164,7 +165,7 @@ topclass_decl ::=
 	|	CLASS id:i LBRACE RBRACE
 		{:
 			// VarDecl is empty list since we are not dealing with them in pa4
-			RESULT = new TopClassDecl(i.getLine(), i.getPos(), i.getLexeme(), new LinkedList<VarDecl>(), null);
+			RESULT = new TopClassDecl(i.getLine(), i.getPos(), i.getLexeme(), new LinkedList<VarDecl>(), new LinkedList<MethodDecl>());
 		:}
 	;
 	
@@ -415,7 +416,7 @@ exp ::=
 	|	LPAREN BYTE:op RPAREN exp:a
 		  {: 
 		  	//System.out.println("ByteCast: " + a.getClass().getSimpleName());
-			RESULT = new ByteCast(op.line, op.pos, a);;
+			RESULT = new ByteCast(op.line, op.pos, a);
 		  :}
           %prec BYTE
 	|	INT_LITERAL:i
