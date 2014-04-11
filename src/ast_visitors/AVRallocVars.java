@@ -500,7 +500,10 @@ public class AVRallocVars extends DepthFirstVisitor{
     {
         //TODO testing
     	VarSTE formal = (VarSTE) mCurrentST.lookupInnermost(node.getName());
+    	//System.out.println("NODE NAME = " +formal.getName());
         Type type = mCurrentST.getExpType(node.getType());
+        
+       // System.out.println("FORMAL TYPE IS " + type);
         formal.setLocation("Y", offset);
         offset += type.getAVRTypeSize();
         //System.out.println(formal.getOffset());

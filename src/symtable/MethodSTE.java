@@ -17,8 +17,8 @@ public class MethodSTE extends NamedScopeSTE{
 	private int frameSize = 0;
 	private String className;
 
-	public MethodSTE(String name) {
-		super(name);
+	public MethodSTE(String name, Scope enclosing) {
+		super(name, enclosing);
 		mSignature = new ArrayList<Type>();
 	}
 
@@ -52,6 +52,14 @@ public class MethodSTE extends NamedScopeSTE{
 	
 	public String getAVRLabel(){
 		return className+getName();
+	}
+	
+	public boolean checkReturnType(Type t){
+		if(t == returnType)
+			return true;
+		if(t == Type.BYTE && returnType == Type.INT)
+			return true;
+		return false;
 	}
 
 	// THIS MAY BE BAD

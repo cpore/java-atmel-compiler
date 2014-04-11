@@ -31,9 +31,11 @@ import ast.visitor.DepthFirstVisitor;
 public class BuildSymTable extends DepthFirstVisitor{
 	
 	private SymTable mCurrentST;
+	private LinkedList<SemanticException> doubleDef;
 	
 	public BuildSymTable(){
 		mCurrentST = new symtable.SymTable();
+		doubleDef = new LinkedList<SemanticException>();
 	}
 	
 	public SymTable getSymTable(){
@@ -184,7 +186,20 @@ public class BuildSymTable extends DepthFirstVisitor{
     {
     	
     	VarSTE vste = new VarSTE(node.getName());
+    	if(mCurrentST.lookupInnermost(vste.getName()) != null){
+    		doubleDef.add(new SemanticException(
+					"Redefined symbol " + vste.getName(),
+					node.getLine(),
+					node.getPos()));
+    		
+    		/*throw new SemanticException(
+					"Redefined symbol " + vste.getName(),
+					node.getLine(),
+					node.getPos());*/
+        }
         vste.setType(node.getType());
+      //  System.out.println("FORMAL NAME: " + vste.getName());
+      //  System.out.println("FORMAL TYPE: " + vste.getType());
     	mCurrentST.insert(vste);
     }
 
@@ -223,7 +238,7 @@ public class BuildSymTable extends DepthFirstVisitor{
     
     public void inMethodDecl(MethodDecl node)
     {
-        MethodSTE mste = new MethodSTE(node.getName());
+        MethodSTE mste = new MethodSTE(node.getName(), mCurrentST.peek());
         // create a list of formal types
         LinkedList<Formal> list = node.getFormals();
         for(int i=0; i<list.size(); i++){
@@ -239,10 +254,14 @@ public class BuildSymTable extends DepthFirstVisitor{
         //System.out.println("RETURN TYPE = " + mste.getReturnType());
         
         if(mCurrentST.lookupInnermost(mste.getName()) != null){
-        	throw new SemanticException(
-					"Redefined method symbol ID : " + mste.getName(),
+        	doubleDef.add(new SemanticException(
+					"Redefined symbol " + mste.getName(),
 					node.getLine(),
-					node.getPos());
+					node.getPos()));
+        	/*throw new SemanticException(
+					"Redefined symbol " + mste.getName(),
+					node.getLine(),
+					node.getPos());*/
         }
         //insert it and pushScope
         mCurrentST.insertAndPushScope(mste);
@@ -315,7 +334,13 @@ public class BuildSymTable extends DepthFirstVisitor{
 
     public void outProgram(Program node)
     {
-        defaultOut(node);
+        if(doubleDef.size() >0){
+        	for(SemanticException se : doubleDef){
+        		System.out.println(se.getMessage());
+        	}
+        	throw new SemanticException("Errors found while building symbol table");
+        }
+    	defaultOut(node);
     }
 
     @Override
@@ -355,13 +380,18 @@ public class BuildSymTable extends DepthFirstVisitor{
 
     public void inTopClassDecl(TopClassDecl node)
     {
-        ClassSTE cste = new ClassSTE(node.getName());
+        ClassSTE cste = new ClassSTE(node.getName(), mCurrentST.peek());
     	
         if(mCurrentST.lookupInnermost(cste.getName()) != null){
-        	throw new SemanticException(
-					"Redefined class symbol ID : " + cste.getName(),
+        	doubleDef.add(new SemanticException(
+					"Redefined symbol " + cste.getName(),
 					node.getLine(),
-					node.getPos());
+					node.getPos()));
+        	
+        	/*throw new SemanticException(
+					"Redefined symbol " + cste.getName(),
+					node.getLine(),
+					node.getPos());*/
         }
         mCurrentST.insertAndPushScope(cste);
     }

@@ -13,12 +13,24 @@ public class Scope {
 		parentId = id;
 		//mEnclosing = enclosing;
 	}
+	
+	public Scope(String id, Scope enclosing){ 
+		mDict = new HashMap<String, STE>();
+		parentId = id;
+		mEnclosing = enclosing;
+	}
 
 	public STE lookup(String Sym){
 		STE ste = mDict.get(Sym);
 		if(ste != null)
 			return ste;
 
+		//ste = mEnclosing.lookup(Sym);
+		//STE ste = mDict.get(sym);
+		if(ste != null)
+			return ste;
+
+		//ste = mEnclosing.lookup(Sym);
 		// look through named scopes if not in this scope
 		for(STE s: mDict.values()){
 			if(s instanceof NamedScopeSTE){
@@ -43,10 +55,6 @@ public class Scope {
 		mDict.put(ste.getName(), ste);
 	}
 
-	public void setEnclosing(Scope enclosing){
-		mEnclosing = enclosing;
-	}
-
 	public Scope getEnclosing(){
 		return mEnclosing;
 	}
@@ -54,5 +62,23 @@ public class Scope {
 	public void printDict(){
 		for(String s: mDict.keySet())
 			System.out.println("\t" + s);
+	}
+
+	public STE search(String sym) {
+		STE ste = mDict.get(sym);
+		if(ste != null)
+			return ste;
+
+		//ste = mEnclosing.lookup(Sym);
+		// look through named scopes if not in this scope
+		for(STE s: mDict.values()){
+			if(s instanceof NamedScopeSTE){
+				ste = ((NamedScopeSTE) s).lookup(sym);
+				if(ste != null)
+					break;
+			}
+		}
+
+		return ste;
 	}
 }

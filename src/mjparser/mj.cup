@@ -199,6 +199,11 @@ method_decl	::=
 			// VarDecl is empty list since we are not dealing with them in pa4
 			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), f, new LinkedList<VarDecl>(), s, null); 
 		:}
+	| 	PUBLIC:op type:t id:i LPAREN formals:f RPAREN LBRACE RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), f, new LinkedList<VarDecl>(), new LinkedList<IStatement>(), null); 
+		:}
 	| 	PUBLIC:op type:t id:i LPAREN RPAREN LBRACE statement_list:s RBRACE
 		{:
 			// VarDecl is empty list since we are not dealing with them in pa4

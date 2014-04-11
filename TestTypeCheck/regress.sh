@@ -12,7 +12,16 @@ function createPng()
 }
 
 
-for filename in `ls $1*.java`
+if [[ -d $1 ]]; then
+    FILES=$(ls $1*.java)
+elif [[ -f $1 ]]; then
+    FILES=$1
+else
+    echo "$PASSED is not a valid file or directory"
+    exit 1
+fi
+
+for filename in $FILES
 do
     echo "Regression testing MJ.jar $filename"
 
@@ -38,4 +47,4 @@ done
 
 #createPng
 # clean up the files afterwards
-rm t1 t2 *.s *.png *.class *.dot
+rm t1 t2 PA4Tests/*.s *.s *.png *.class PA4Tests/*.dot

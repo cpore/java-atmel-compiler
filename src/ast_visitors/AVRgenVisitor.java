@@ -357,9 +357,10 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			regNum -= 2;
 		}
 		
-		ArrayList<Type> sig = mste.getSignature();
-		//Collections.reverse(sig);
-		for(Type type: sig){
+		LinkedList<IExp> args = node.getArgs();
+		Collections.reverse(args);
+		for(IExp exp: args){
+			Type type = mCurrentST.getExpType(exp);
 			if(type.getAVRTypeSize() == 1){
 				out.println("    # load a one byte expression off stack");
 				out.println("    pop    r" + regNum);
@@ -370,6 +371,19 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			}
 			regNum += 2;
 		}
+		/*ArrayList<Type> sig = mste.getSignature();
+		Collections.reverse(sig);
+		for(Type type: sig){
+			if(type.getAVRTypeSize() == 1){
+				out.println("    # load a one byte expression off stack");
+				out.println("    pop    r" + regNum);
+			}else if(type.getAVRTypeSize() == 2){
+				out.println("    # load a two byte expression off stack");
+				out.println("    pop    r" + (regNum));
+				out.println("    pop    r" + (regNum+1));
+			}
+			regNum += 2;
+		}*/
 
 		// handling "this"
 		out.println("    # receiver will be passed as first param");
@@ -435,9 +449,10 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			regNum -= 2;
 		}
 		
-		ArrayList<Type> sig = mste.getSignature();
-		//Collections.reverse(sig);
-		for(Type type: sig){
+		LinkedList<IExp> args = node.getArgs();
+		Collections.reverse(args);
+		for(IExp exp: args){
+			Type type = mCurrentST.getExpType(exp);
 			if(type.getAVRTypeSize() == 1){
 				out.println("    # load a one byte expression off stack");
 				out.println("    pop    r" + regNum);
@@ -448,6 +463,19 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			}
 			regNum += 2;
 		}
+		/*ArrayList<Type> sig = mste.getSignature();
+		Collections.reverse(sig);
+		for(Type type: sig){
+			if(type.getAVRTypeSize() == 1){
+				out.println("    # load a one byte expression off stack");
+				out.println("    pop    r" + regNum);
+			}else if(type.getAVRTypeSize() == 2){
+				out.println("    # load a two byte expression off stack");
+				out.println("    pop    r" + (regNum));
+				out.println("    pop    r" + (regNum+1));
+			}
+			regNum += 2;
+		}*/
 
 		// handling "this"
 		out.println("    # receiver will be passed as first param");
@@ -681,10 +709,11 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void outFormal(Formal node)
 	{
 		// offset for formals
-		VarSTE vste = (VarSTE) mCurrentST.lookup(node.getName());
+		VarSTE vste = (VarSTE) mCurrentST.lookupInnermost(node.getName());
 		
 		if(vste.getWidth() == 2){
-			out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()+1) + ", r" + currReg);
+			int offsetplusone = vste.getOffset()+1;
+			out.println("    std    " + vste.getbase() + " + " + offsetplusone + ", r" + currReg);
 			out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()) + ", r" + (currReg-1));
 		}else{
 			out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()) + ", r" + (currReg-1));
@@ -709,7 +738,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		
 		out.println("    # IdExp");
 		out.println("    # load value for variable " + node.getLexeme());
-		VarSTE vste = (VarSTE) mCurrentST.lookup(node.getLexeme());
+		VarSTE vste = (VarSTE) mCurrentST.lookupInnermost(node.getLexeme());
 		// TODO actually check if param!
 		out.println("    # variable is a local or param variable");
 		out.println();
@@ -1217,11 +1246,13 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void inMethodDecl(MethodDecl node)
 	{
+		mCurrentST.pushScope(node.getName());
 		currReg = 25;
 	}
 
 	public void outMethodDecl(MethodDecl node)
 	{
+		mCurrentST.popScope();
 		currReg = 25;
 	}
 
@@ -1262,8 +1293,8 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 		// offset for "this"
 		VarSTE vste = (VarSTE) mste.getScope().lookupInnermost("this");
-		if(vste == null)
-			System.out.println("COULD NOT FIND \"this\" IN AVRGEN");
+		//if(vste == null)
+		//	System.out.println("COULD NOT FIND \"this\" IN AVRGEN");
 		out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()+1) + ", r" + currReg);
 		out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()) + ", r" + (currReg-1));
 		currReg -= 2;
@@ -1768,7 +1799,16 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outThisExp(ThisLiteral node)
 	{
-		defaultOut(node);
+		
+		// This code is just a place holder until
+		// We can actually get a heap point to "this"
+		out.println("    # Place holder Call to \"this\"");
+		out.println("    ldi    r24, lo8(0)");
+		out.println("    ldi    r25, hi8(0)");
+		// In PA5 this pushes the address of "this" onto the stack
+		out.println("    # push two byte expression onto stack");
+		out.println("    push   r25");
+		out.println("    push   r24");
 	}
 
 	@Override
@@ -1822,12 +1862,12 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void inTopClassDecl(TopClassDecl node)
 	{
-		defaultIn(node);
+		mCurrentST.pushScope(node.getName());
 	}
 
 	public void outTopClassDecl(TopClassDecl node)
 	{
-		defaultOut(node);
+		mCurrentST.popScope();
 	}
 
 	@Override

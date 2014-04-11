@@ -45,6 +45,13 @@ public class SymTable {
     public STE lookup(String sym) {
         return mScope.lookup(sym);
     }
+    
+    /**
+     * Searches entire symbol table for a symbol
+     */
+    public STE search(String sym) {
+        return mScope.search(sym);
+    }
 
     /** Lookup a symbol in innermost scope only.
      * return null if the symbol is not found
@@ -68,6 +75,13 @@ public class SymTable {
      */
     public void insert(STE ste) {
     	mScopeStack.peek().insert(ste);
+    }
+    
+    /** When inserting an STE will just insert
+     * it into the scope at the top of the scope stack.
+     */
+    public Scope peek() {
+    	return mScopeStack.peek();
     }
     
     /** 
