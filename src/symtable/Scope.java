@@ -27,8 +27,8 @@ public class Scope {
 
 		//ste = mEnclosing.lookup(Sym);
 		//STE ste = mDict.get(sym);
-		if(ste != null)
-			return ste;
+		//if(ste != null)
+		//	return ste;
 
 		//ste = mEnclosing.lookup(Sym);
 		// look through named scopes if not in this scope
@@ -41,6 +41,18 @@ public class Scope {
 		}
 
 		return ste;
+	}
+	
+	public STE lookupEnclosing(String Sym){
+		for(String s : mDict.keySet())
+			System.out.println(parentId + " mDict contains: " + s);
+		
+		STE ste = mDict.get(Sym);
+		
+		if(ste != null)
+			return ste;
+
+		return mEnclosing.lookupEnclosing(Sym);
 	}
 	
 	public String getParentId(){
@@ -62,6 +74,10 @@ public class Scope {
 	public void printDict(){
 		for(String s: mDict.keySet())
 			System.out.println("\t" + s);
+	}
+	
+	public HashMap<String,STE> getDict(){
+		return mDict;
 	}
 
 	public STE search(String sym) {

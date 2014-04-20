@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import ast.node.BoolType;
 import ast.node.ButtonType;
 import ast.node.ByteType;
+import ast.node.ClassType;
 import ast.node.ColorType;
 import ast.node.IType;
 import ast.node.IntType;
+import ast.node.Node;
 import ast.node.ToneType;
 import ast.node.VoidType;
 
@@ -16,6 +18,7 @@ public class MethodSTE extends NamedScopeSTE{
 	private Type returnType;
 	private int frameSize = 0;
 	private String className;
+	private Node expType;
 
 	public MethodSTE(String name, Scope enclosing) {
 		super(name, enclosing);
@@ -24,6 +27,14 @@ public class MethodSTE extends NamedScopeSTE{
 
 	public void addFormal(IType type){
 		mSignature.add(convertType(type));
+	}
+	
+	public void setExpType(Node exp){
+		expType = exp;
+	}
+	
+	public Node getExptType(){
+		return expType;
 	}
 
 	public ArrayList<Type> getSignature(){
@@ -59,6 +70,8 @@ public class MethodSTE extends NamedScopeSTE{
 			return true;
 		if(t == Type.BYTE && returnType == Type.INT)
 			return true;
+		if(t.toString().equals(returnType.toString()))
+			return true;
 		return false;
 	}
 
@@ -83,7 +96,7 @@ public class MethodSTE extends NamedScopeSTE{
 		else if(type instanceof VoidType)
 			return Type.VOID;
 		else
-			return Type.CLASS;
+			return Type.getClassType(((ClassType) type).getName());
 	}
 	
 }

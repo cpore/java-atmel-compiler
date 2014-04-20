@@ -117,7 +117,7 @@ else
 
 fi
 
-#createPng
+createPng
 
 echo
-rm t1 t2 #*.s *.png *.class *.dot
+rm t1 t2 *.s *.png *.class *.dot

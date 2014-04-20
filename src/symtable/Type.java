@@ -4,8 +4,8 @@ import exceptions.*;
 
 import java.util.*;
 
-public class Type
-{
+public class Type{
+	
   public static final Type BOOL = new Type();
   public static final Type INT = new Type();
   public static final Type TONE = new Type();
@@ -13,21 +13,35 @@ public class Type
   public static final Type COLOR = new Type();
   public static final Type BUTTON = new Type();
   public static final Type VOID = new Type();
-  public static final Type CLASS = new Type();
-
-
-  private Type()
-  {
+  private static final HashMap<String, Type> classTypes = new HashMap<String, Type>();
+  private String className;
+  
+  private Type(){
 
   }
+  
+  private Type(String className){
+	  this.className = className;
+  }
 
-
+  public static Type getClassType(String className){
+	  return classTypes.get("class_" + className);
+  }
+  
+  public String getClassName(){
+	  return className.substring(6);
+  }
+  
+  public static void setClassType(String className){
+	 Type classType = new Type("class_" + className);
+	 classTypes.put("class_" + className, classType);
+  }
     
 /*
 */
 
-  public String toString()
-  {
+  public String toString(){
+	  
     if(this == INT)
     {
       return "INT";
@@ -63,13 +77,10 @@ public class Type
       return "VOID";
     }
 
-    if(this == CLASS)
-    {
-      return "CLASS";
-    }
+    return className;
 /*
 */
-    return "MAINCLASS;";
+    //return "MAINCLASS;";
   }
   
   public int getAVRTypeSize() {

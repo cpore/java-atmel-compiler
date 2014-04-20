@@ -29,7 +29,7 @@ do
     java -jar ../MJ.jar $filename >& t1
 
     # Make AVR assembly from our test program using reference compiler
-    java -jar MJ_PA4.jar $filename >& t2
+    java -jar MJ_PA5.jar $filename >& t2
 
     results=$(diff t1 t2)
     echo "$results"

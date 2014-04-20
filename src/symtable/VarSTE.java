@@ -7,7 +7,7 @@ import ast.node.IType;
 public class VarSTE extends STE{
 	private Type mType;
 	private String mBase;
-	private String classType;
+	private String className;
 	private int mOffset;
 
 	private boolean isMember = false;
@@ -19,7 +19,17 @@ public class VarSTE extends STE{
 		//mType = type;
 		mBase = "Y";
 		mOffset = 0;
-		classType = "";
+		className = "";
+	}
+	
+	public VarSTE(String name, IType type) {
+		super(name);
+		//mType = type;
+		mBase = "Y";
+		mOffset = 0;
+		className = "";
+		setType(type);
+		className = mType.toString();
 	}
 
 	public void setLocation(String base, int offset){
@@ -43,6 +53,10 @@ public class VarSTE extends STE{
 	public String getBasePlusOffset(){
 		return mBase + " + " + mOffset;
 	}
+	
+	public void setClassType(Type type){
+		mType = type;
+	}
 
 	public Type getType(){
 		return mType;
@@ -50,6 +64,11 @@ public class VarSTE extends STE{
 
 	public boolean isMember(){
 		return isMember;
+	}
+	
+	public void setIsMember(boolean isM){
+		isMember = isM;
+		mBase = "Z";
 	}
 
 	public boolean isParam(){
@@ -64,19 +83,21 @@ public class VarSTE extends STE{
 		return isLocal;
 	}
 	
-	public void setClassType(String type){
-		classType = type;
+	public void setIsLocal(boolean isL){
+		isLocal = isL;
+	}
+	
+	public void setClassName(String type){
+		className = type;
 	}
 
-	public String getClassType(){
-		return classType;
+	public String getClassName(){
+		return className;
 	}
 	
 	// THIS MAY BE BAD
 	public void setType(IType type){
-		if(type == null)
-			mType = Type.CLASS;
-		else if(type instanceof BoolType)
+		if(type instanceof BoolType)
 			mType = Type.BOOL;
 		else if(type instanceof ButtonType)
 			mType = Type.BUTTON;
@@ -90,7 +111,8 @@ public class VarSTE extends STE{
 			mType = Type.TONE;
 		else if(type instanceof VoidType)
 			mType = Type.VOID;
-		else
-			mType = Type.CLASS;
+		else if(type instanceof ClassType){
+			mType = Type.getClassType(((ClassType) type).getName());
+		}
 	}
 }

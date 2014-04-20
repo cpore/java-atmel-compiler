@@ -99,6 +99,8 @@ non terminal IExp return_exp;
 non terminal IClassDecl topclass_decl;
 non terminal LinkedList<IClassDecl> class_decls;
 non terminal CallStatement call_stmt;
+non terminal VarDecl var_decl;
+non terminal LinkedList<VarDecl> var_decls;
 
 /* Declare precedence and associativity  here */
 
@@ -167,6 +169,15 @@ topclass_decl ::=
 			// VarDecl is empty list since we are not dealing with them in pa4
 			RESULT = new TopClassDecl(i.getLine(), i.getPos(), i.getLexeme(), new LinkedList<VarDecl>(), new LinkedList<MethodDecl>());
 		:}
+	|	CLASS id:i LBRACE var_decls:v method_decls:m RBRACE
+		{:
+			RESULT = new TopClassDecl(i.getLine(), i.getPos(), i.getLexeme(), v, m);
+		:}
+	|	CLASS id:i LBRACE var_decls:v RBRACE
+		{:
+			// VarDecl is empty list since we are not dealing with them in pa4
+			RESULT = new TopClassDecl(i.getLine(), i.getPos(), i.getLexeme(), v, new LinkedList<MethodDecl>());
+		:}
 	;
 	
 class_decls ::=
@@ -179,6 +190,27 @@ class_decls ::=
 	|	class_decls:list topclass_decl:t
 		{:
 			list.add(t);
+			RESULT = list;
+		:}
+	;
+	
+var_decl	::=
+		type:t id:i SEMI
+		{:
+			RESULT = new VarDecl(t.getLine(), t.getPos(), t, i.getLexeme());
+		:}
+	;
+	
+var_decls	::=
+		var_decl:v
+		{:
+			LinkedList<VarDecl> list = new LinkedList<VarDecl>();
+			list.add(v);
+			RESULT = list;
+		:}
+	|	var_decls:list var_decl:v
+		{:
+			list.add(v);
 			RESULT = list;
 		:}
 	;
@@ -223,6 +255,38 @@ method_decl	::=
 		{:
 			// VarDecl is empty list since we are not dealing with them in pa4
 			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), new LinkedList<Formal>(), new LinkedList<VarDecl>(), new LinkedList<IStatement>(), null); 
+		:}
+	|	PUBLIC:op type:t id:i LPAREN formals:f RPAREN LBRACE var_decls:v statement_list:s return_exp:a RBRACE
+		{:
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), f, v, s, a); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN formals:f RPAREN LBRACE var_decls:v return_exp:a RBRACE
+		{:
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), f, v, new LinkedList<IStatement>(), a); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN formals:f RPAREN LBRACE var_decls:v statement_list:s RBRACE
+		{:
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), f, v, s, null); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN formals:f RPAREN LBRACE var_decls:v RBRACE
+		{:
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), f, v, new LinkedList<IStatement>(), null); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN RPAREN LBRACE var_decls:v statement_list:s RBRACE
+		{:
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), new LinkedList<Formal>(), v, s, null); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN RPAREN LBRACE var_decls:v statement_list:s return_exp:a RBRACE
+		{:
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), new LinkedList<Formal>(), v, s, a); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN RPAREN LBRACE var_decls:v return_exp:a RBRACE
+		{:
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), new LinkedList<Formal>(), v, new LinkedList<IStatement>(), a); 
+		:}
+	| 	PUBLIC:op type:t id:i LPAREN RPAREN LBRACE var_decls:v RBRACE
+		{:
+			RESULT = new MethodDecl(op.pos, op.line, t, i.getLexeme(), new LinkedList<Formal>(), v, new LinkedList<IStatement>(), null); 
 		:}
 	;
 	
@@ -297,6 +361,10 @@ type	::=
 		{:
 			RESULT = new ToneType(t.line, t.pos);
 		:}
+	|	id:i
+		{:
+			RESULT = new ClassType(i.getLine(), i.getPos(), i.getLexeme());
+		:}
 	;
     
 statement ::= 
@@ -334,6 +402,10 @@ statement ::=
 	|	WHILE:op LPAREN exp:a RPAREN statement:s
 		  {:
 		  	RESULT = new WhileStatement(op.line, op.pos, a, s);
+		  :}
+	|	id:i ASSIGN:op exp:a SEMI
+		  {:
+		  	RESULT = new AssignStatement(op.line, op.pos, i.getLexeme(), a);
 		  :}
 	;
 	

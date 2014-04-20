@@ -46,6 +46,10 @@ public class SymTable {
         return mScope.lookup(sym);
     }
     
+    public ClassSTE getClassSTE(Type t){
+		return (ClassSTE) mScope.getDict().get(t.getClassName());
+	}
+    
     /**
      * Searches entire symbol table for a symbol
      */
@@ -59,6 +63,12 @@ public class SymTable {
     public STE lookupInnermost(String sym) {
     		Scope currentScope = mScopeStack.peek();
     		return currentScope.lookupInnermost(sym);
+    }
+    
+    public STE lookupEnclosing(String sym){
+    	System.out.println("LOOKING UP:" + sym);
+    	Scope currentScope = mScopeStack.peek();
+		return currentScope.lookupEnclosing(sym);
     }
     
     /**
@@ -89,7 +99,7 @@ public class SymTable {
      * scope.  IOW make it the top of the scope stack.
      */
     public void pushScope(String id) {
-    	STE ste = lookup(id);
+    	STE ste = lookupEnclosing(id);
     	if(ste instanceof NamedScopeSTE)
     		mScopeStack.push(((NamedScopeSTE) ste).getScope());
     }

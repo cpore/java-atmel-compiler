@@ -28,6 +28,7 @@ PA[0-9]Tests/*.class
 PA[0-9]Tests/.nfs*
 !PA[0-9]Tests/meggy
 PA[0-9]Tests/*.java.s
+PA[0-9]Tests/*.java
 TestTypeCheck/PA[0-9]Tests/*.java.s
 
 src/ast/*/*.class

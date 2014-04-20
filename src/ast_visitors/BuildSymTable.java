@@ -8,6 +8,7 @@ import exceptions.SemanticException;
 import symtable.ClassSTE;
 import symtable.MethodSTE;
 import symtable.SymTable;
+import symtable.Type;
 import symtable.VarSTE;
 import ast.node.AssignStatement;
 import ast.node.CallExp;
@@ -167,7 +168,8 @@ public class BuildSymTable extends DepthFirstVisitor{
 
     public void outClassType(ClassType node)
     {
-        defaultOut(node);
+    	// add class type to type map
+        Type.setClassType(node.getName());
     }
 
     @Override
@@ -198,8 +200,10 @@ public class BuildSymTable extends DepthFirstVisitor{
 					node.getPos());*/
         }
         vste.setType(node.getType());
-      //  System.out.println("FORMAL NAME: " + vste.getName());
-      //  System.out.println("FORMAL TYPE: " + vste.getType());
+        System.out.println("FORMAL NAME: " + vste.getName());
+        System.out.println("FORMAL TYPE: " + vste.getType());
+        vste.setIsParam(true);
+        //Type.setClassType(node.getName());
     	mCurrentST.insert(vste);
     }
 
@@ -266,7 +270,9 @@ public class BuildSymTable extends DepthFirstVisitor{
         //insert it and pushScope
         mCurrentST.insertAndPushScope(mste);
         //create and entry for "this"
-        mCurrentST.insert(new VarSTE("this"));
+        VarSTE thisRef = new VarSTE("this");
+        thisRef.setIsLocal(true);
+        mCurrentST.insert(thisRef);
     }
 
     public void outMethodDecl(MethodDecl node)
@@ -424,15 +430,19 @@ public class BuildSymTable extends DepthFirstVisitor{
 
     public void inVarDecl(VarDecl node)
     {
-        //NO variables yet
-    	/*VarSTE vste = new VarSTE(node.getName());
-        vste.setType(node.getType());
-    	mCurrentST.insert(vste);*/
+    	defaultIn(node);
     }
 
     public void outVarDecl(VarDecl node)
     {
-        defaultOut(node);
+    	VarSTE vste = new VarSTE(node.getName(), node.getType());
+    	System.out.println("VSTE NAME=" + vste.getName());
+    	System.out.println("VSTE TYPE=" + vste.getType());
+    	if(node.parent() instanceof TopClassDecl)
+    		vste.setIsMember(true);
+    	if(node.parent() instanceof MethodDecl)
+    		vste.setIsLocal(true);
+    	mCurrentST.insert(vste);
     }
 
     @Override
