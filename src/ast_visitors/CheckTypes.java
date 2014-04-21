@@ -84,7 +84,8 @@ import exceptions.SemanticException;
 
 public class CheckTypes extends DepthFirstVisitor
 {
-
+	private boolean debug = false;
+	
 	private SymTable mCurrentST;
 	private ClassSTE cste;
 
@@ -347,7 +348,8 @@ public class CheckTypes extends DepthFirstVisitor
 		//get scope for exp
 		//find scope of class called
 		Type expType = mCurrentST.getExpType(node.getExp());
-		System.out.println("CALL TYPE " + expType);
+		if(debug)
+			System.out.println("CALL TYPE " + expType);
 		ClassSTE classSTE = (ClassSTE) mCurrentST.getClassSTE(expType);
 		
 		MethodSTE mste = (MethodSTE) classSTE.lookupEnclosing(node.getId());
@@ -371,8 +373,10 @@ public class CheckTypes extends DepthFirstVisitor
 		for(int i=0; i<node.getArgs().size(); i++){
 			Type argType = mCurrentST.getExpType(node.getArgs().get(i));
 			Type paramType = mste.getSignature().get(i);
-			System.out.println("ARG TYPE=" + argType);
-			System.out.println("PARAM TYPE=" + paramType);
+			if(debug){
+				System.out.println("ARG TYPE=" + argType);
+				System.out.println("PARAM TYPE=" + paramType);
+			}
 			if(argType == Type.BYTE && paramType == Type.INT)
 				continue; // good to go for widening
 			if(!argType.toString().equals(paramType.toString())){
@@ -428,7 +432,8 @@ public class CheckTypes extends DepthFirstVisitor
 			//get scope for exp
 			//find scope of class called
 			Type expType = mCurrentST.getExpType(node.getExp());
-			System.out.println("CALL TYPE " + expType);
+			if(debug)
+				System.out.println("CALL TYPE " + expType);
 			ClassSTE classSTE = (ClassSTE) mCurrentST.getClassSTE(expType);
 			
 			MethodSTE mste = (MethodSTE) classSTE.lookupEnclosing(node.getId());
@@ -452,8 +457,10 @@ public class CheckTypes extends DepthFirstVisitor
 			for(int i=0; i<node.getArgs().size(); i++){
 				Type argType = mCurrentST.getExpType(node.getArgs().get(i));
 				Type paramType = mste.getSignature().get(i);
-				System.out.println("ARG TYPE=" + argType);
-				System.out.println("PARAM TYPE=" + paramType);
+				if(debug){
+					System.out.println("ARG TYPE=" + argType);
+					System.out.println("PARAM TYPE=" + paramType);
+				}
 				if(argType == Type.BYTE && paramType == Type.INT)
 					continue; // good to go for widening
 				if(!argType.toString().equals(paramType.toString())){
@@ -663,6 +670,7 @@ public class CheckTypes extends DepthFirstVisitor
 		{
 			VarSTE vste  = (VarSTE) mCurrentST.lookup(node.getName());
 			//Type.setClassType(node.getName());
+			vste.setType(node.getType());
 			mCurrentST.setExpType(node, vste.getType());
 		}
 
@@ -701,7 +709,7 @@ public class CheckTypes extends DepthFirstVisitor
 			}
 
 			// get its IdType, and, and mCurrentST.setExpType(node, IdType);
-			Type.setClassType(node.getLexeme());
+			//Type.setClassType(node.getLexeme());
 			Type type = vste.getType();
 			mCurrentST.setExpType(node, type);
 			//defaultOut(node);
@@ -1377,6 +1385,8 @@ public class CheckTypes extends DepthFirstVisitor
 
 		public void outProgram(Program node)
 		{
+			if(debug)
+				Type.printTypes();
 			// Do nothing?
 			//defaultOut(node);
 		}
@@ -1409,7 +1419,7 @@ public class CheckTypes extends DepthFirstVisitor
 			// set classname of "this"
 			VarSTE thisSTE = (VarSTE) mCurrentST.lookupInnermost(node.getLexeme());
 			thisSTE.setClassName(cste.getName());
-			Type.setClassType(cste.getName());
+			//Type.setClassType(cste.getName());
 			thisSTE.setClassType(Type.getClassType(cste.getName()));
 			mCurrentST.setExpType(node, Type.getClassType(cste.getName()));
 		}

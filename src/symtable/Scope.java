@@ -44,9 +44,6 @@ public class Scope {
 	}
 	
 	public STE lookupEnclosing(String Sym){
-		for(String s : mDict.keySet())
-			System.out.println(parentId + " mDict contains: " + s);
-		
 		STE ste = mDict.get(Sym);
 		
 		if(ste != null)

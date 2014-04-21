@@ -66,7 +66,7 @@ public class SymTable {
     }
     
     public STE lookupEnclosing(String sym){
-    	System.out.println("LOOKING UP:" + sym);
+    	//System.out.println("LOOKING UP:" + sym);
     	Scope currentScope = mScopeStack.peek();
 		return currentScope.lookupEnclosing(sym);
     }

@@ -30,6 +30,7 @@ import ast.node.VarDecl;
 import ast.visitor.DepthFirstVisitor;
 
 public class BuildSymTable extends DepthFirstVisitor{
+	private boolean debug = false;
 	
 	private SymTable mCurrentST;
 	private LinkedList<SemanticException> doubleDef;
@@ -198,12 +199,18 @@ public class BuildSymTable extends DepthFirstVisitor{
 					"Redefined symbol " + vste.getName(),
 					node.getLine(),
 					node.getPos());*/
-        }
-        vste.setType(node.getType());
-        System.out.println("FORMAL NAME: " + vste.getName());
-        System.out.println("FORMAL TYPE: " + vste.getType());
-        vste.setIsParam(true);
-        //Type.setClassType(node.getName());
+    	}
+    	vste.setType(node.getType());
+
+    	vste.setIsParam(true);
+    	//Type.setClassType(node.getName());
+    	if(debug){
+    		System.out.println("FORMAL NAME: " + vste.getName());
+    		System.out.println("FORMAL TYPE: " + vste.getType());
+    		System.out.println("ISMEMBER=" + vste.isMember());
+    		System.out.println("ISLOCAL=" + vste.isLocal());
+    		System.out.println("ISPARAM=" + vste.isParam());
+    	}
     	mCurrentST.insert(vste);
     }
 
@@ -436,12 +443,18 @@ public class BuildSymTable extends DepthFirstVisitor{
     public void outVarDecl(VarDecl node)
     {
     	VarSTE vste = new VarSTE(node.getName(), node.getType());
-    	System.out.println("VSTE NAME=" + vste.getName());
-    	System.out.println("VSTE TYPE=" + vste.getType());
+
     	if(node.parent() instanceof TopClassDecl)
     		vste.setIsMember(true);
     	if(node.parent() instanceof MethodDecl)
     		vste.setIsLocal(true);
+    	if(debug){
+    		System.out.println("VSTE NAME=" + vste.getName());
+    		System.out.println("VSTE TYPE=" + vste.getType());
+    		System.out.println("ISMEMBER=" + vste.isMember());
+    		System.out.println("ISLOCAL=" + vste.isLocal());
+    		System.out.println("ISPARAM=" + vste.isParam());
+    	}
     	mCurrentST.insert(vste);
     }
 

@@ -3,6 +3,7 @@ package symtable;
 import exceptions.*;
 
 import java.util.*;
+import java.util.Map.Entry;
 
 public class Type{
 	
@@ -39,6 +40,11 @@ public class Type{
     
 /*
 */
+  public static void printTypes(){
+	  for(Entry<String, Type> e: classTypes.entrySet()){
+		  System.out.println("\tKEY="+e.getKey()+" VALUE="+e.getValue());
+	  }
+  }
 
   public String toString(){
 	  

@@ -3,6 +3,7 @@ package ast_visitors;
 import java.util.ArrayList;
 import java.util.List;
 
+import symtable.ClassSTE;
 import symtable.MethodSTE;
 import symtable.SymTable;
 import symtable.Type;
@@ -66,7 +67,8 @@ import ast.visitor.DepthFirstVisitor;
 
 public class AVRallocVars extends DepthFirstVisitor{
 	private SymTable mCurrentST;
-	private int offset = 1;
+	private int yOffset = 1;
+	private int zOffset = 0;
 	
 	public AVRallocVars(SymTable st){
 		mCurrentST = st;
@@ -501,11 +503,11 @@ public class AVRallocVars extends DepthFirstVisitor{
         //TODO testing
     	VarSTE formal = (VarSTE) mCurrentST.lookupInnermost(node.getName());
     	//System.out.println("NODE NAME = " +formal.getName());
-        Type type = mCurrentST.getExpType(node.getType());
+        Type type = formal.getType();
         
        // System.out.println("FORMAL TYPE IS " + type);
-        formal.setLocation("Y", offset);
-        offset += type.getAVRTypeSize();
+        formal.setLocation("Y", yOffset);
+        yOffset += type.getAVRTypeSize();
         //System.out.println(formal.getOffset());
     	defaultOut(node);
     }
@@ -834,9 +836,10 @@ public class AVRallocVars extends DepthFirstVisitor{
     	VarSTE receiver = (VarSTE) mCurrentST.lookupInnermost("this");
     	if(receiver == null)
     		System.out.println("COULD NOT FIND \"this\"");
-    	receiver.setType(null);
-    	receiver.setLocation("Y", offset);
-    	offset += 2;
+    	
+    	//receiver.setType(null);
+    	receiver.setLocation("Y", yOffset);
+    	yOffset += 2;
     	//TODO testing
     	defaultIn(node);
     }
@@ -845,10 +848,10 @@ public class AVRallocVars extends DepthFirstVisitor{
     {
     	//set the number of bytes the stack frame occupies
     	//(current value of offset) 
-    	MethodSTE mste = (MethodSTE) mCurrentST.lookup(node.getName());
-    	mste.setFrameSize(offset);
+    	MethodSTE mste = (MethodSTE) mCurrentST.lookupEnclosing(node.getName());
+    	mste.setFrameSize(yOffset);
     	// reset offset for next node
-    	offset = 1;
+    	yOffset = 1;
     	mCurrentST.popScope();
     }
 
@@ -970,7 +973,7 @@ public class AVRallocVars extends DepthFirstVisitor{
 
     public void outNewExp(NewExp node)
     {
-        defaultOut(node);
+    	defaultOut(node);
     }
 
     @Override
@@ -1131,11 +1134,15 @@ public class AVRallocVars extends DepthFirstVisitor{
     {
     	//TODO
     	mCurrentST.pushScope(node.getName());
+    	zOffset = 0;
     }
 
     public void outTopClassDecl(TopClassDecl node)
     {
-        mCurrentST.popScope();
+        ClassSTE cste = (ClassSTE) mCurrentST.lookup(node.getName());
+        cste.setClassSize(zOffset);
+    	zOffset = 0;
+    	mCurrentST.popScope();
     }
 
     @Override
@@ -1178,19 +1185,33 @@ public class AVRallocVars extends DepthFirstVisitor{
 
     public void inVarDecl(VarDecl node)
     {
-        defaultIn(node);
+    	defaultIn(node);
     }
 
     public void outVarDecl(VarDecl node)
     {
-        defaultOut(node);
+    	VarSTE  vste = (VarSTE) mCurrentST.lookupInnermost(node.getName());
+
+    	if(vste.isLocal()){
+    		Type type = vste.getType();
+    		// System.out.println("FORMAL TYPE IS " + type);
+    		vste.setLocation("Y", yOffset);
+    		yOffset += type.getAVRTypeSize();
+    	}else if(vste.isMember()){
+    		Type type = vste.getType();
+    		// System.out.println("FORMAL TYPE IS " + type);
+    		vste.setLocation("Z", zOffset);
+    		zOffset += type.getAVRTypeSize();
+    	}else{
+    		System.out.println("Could not determin locality of variable " + node.getName());
+    	}
     }
 
     @Override
     public void visitVarDecl(VarDecl node)
     {
-        inVarDecl(node);
-        if(node.getType() != null)
+    	inVarDecl(node);
+    	if(node.getType() != null)
         {
             node.getType().accept(this);
         }

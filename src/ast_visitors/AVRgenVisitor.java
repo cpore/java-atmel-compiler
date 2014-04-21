@@ -16,6 +16,7 @@ import ast.node.*;
 
 import java.util.*;
 
+import symtable.ClassSTE;
 import symtable.MethodSTE;
 import symtable.SymTable;
 import symtable.Type;
@@ -26,6 +27,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	private PrintWriter out;
 	private SymTable mCurrentST;
 	private int currReg = 25;
+	private boolean debug = false;
 
 	/** Constructor takes a PrintWriter, and stores in instance var. */
 	public AVRgenVisitor(PrintWriter out, SymTable st) {
@@ -173,7 +175,36 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 
 	public void outAssignStatement(AssignStatement node)
 	{
-		defaultOut(node);
+		VarSTE vste = (VarSTE) mCurrentST.lookupEnclosing(node.getId());
+		out.println("    ### AssignStatement");
+		out.println("    # load rhs exp");
+		Type expType = mCurrentST.getExpType(node.getExp());
+		if(expType.getAVRTypeSize() == 2){
+			loadLInt();
+		}else if(expType.getAVRTypeSize() == 1){
+			loadLByte();
+		}
+		
+		if(vste.isMember()){
+			out.println();
+			out.println("    # loading the implicit \"this\"");
+			out.println();
+			out.println("    # load a two byte variable from base+offset");
+			out.println("    ldd    r31, Y + 2");
+			out.println("    ldd    r30, Y + 1");
+		}
+		
+		out.println("    # store rhs into var " + vste.getName());
+		if(vste.getWidth() == 2){
+			out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()+1) + ", r25");
+			out.println("    std    "  + vste.getbase() + " + " + (vste.getOffset()) + ", r24");
+			
+		}else if(vste.getWidth() == 1){
+			out.println("    std    "  + vste.getbase() + " + " + (vste.getOffset()) + ", r24");
+		}
+
+		out.println();
+		out.flush();
 	}
 
 	@Override
@@ -335,7 +366,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void visitCallExp(CallExp node)
 	{
 		inCallExp(node);
-		MethodSTE mste = (MethodSTE) mCurrentST.lookup(node.getId());
+		//get scope for exp
+		//find scope of class called
+		Type expType = mCurrentST.getExpType(node.getExp());
+		if(debug)
+			System.out.println("CALL TYPE " + expType);
+		ClassSTE classSTE = (ClassSTE) mCurrentST.getClassSTE(expType);
+		
+		MethodSTE mste = (MethodSTE) classSTE.lookupEnclosing(node.getId());
 		
 		if(node.getExp() != null)
 		{
@@ -427,7 +465,15 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	{
 		inCallStatement(node);
 
-		MethodSTE mste = (MethodSTE) mCurrentST.lookup(node.getId());
+		//get scope for exp
+		//find scope of class called
+		Type expType = mCurrentST.getExpType(node.getExp());
+		if(debug )
+			System.out.println("CALL TYPE " + expType);
+		ClassSTE classSTE = (ClassSTE) mCurrentST.getClassSTE(expType);
+		
+		MethodSTE mste = (MethodSTE) classSTE.lookupEnclosing(node.getId());
+		
 		if(mste == null)
 			System.out.println("Can't find " + node.getId() + " in Symbol table");
 		if(node.getExp() != null)
@@ -738,23 +784,49 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		
 		out.println("    # IdExp");
 		out.println("    # load value for variable " + node.getLexeme());
-		VarSTE vste = (VarSTE) mCurrentST.lookupInnermost(node.getLexeme());
-		// TODO actually check if param!
-		out.println("    # variable is a local or param variable");
-		out.println();
+		VarSTE vste = (VarSTE) mCurrentST.lookupEnclosing(node.getLexeme());
 		
-		if(vste.getWidth() == 2){
+		if(vste.isMember()){
+			out.println();
+			out.println("    # loading the implicit \"this\"");
+			out.println();
 			out.println("    # load a two byte variable from base+offset");
-			out.println("    ldd    r24, " + vste.getbase() + " + " + (vste.getOffset()));
-			out.println("    ldd    r25, " + vste.getbase() + " + " + (vste.getOffset()+1));
-			out.println("    # push two byte expression onto stack");
-			out.println("    push   r25");
-			out.println("    push   r24");
-		}else if(vste.getWidth() == 1){
-			out.println("    # load a one byte variable from base+offset");
-			out.println("    ldd    r24, " + vste.getbase() + " + " + (vste.getOffset()));
-			out.println("    # push one byte expression onto stack");
-			out.println("    push   r24");
+			out.println("    ldd    r31, Y + 2");
+			out.println("    ldd    r30, Y + 1");
+			out.println("    # variable is a member variable");
+			out.println();
+			
+			if(vste.getWidth() == 2){
+				out.println("    # load a two byte variable from base+offset");
+				out.println("    ldd    r25, " + vste.getbase() + " + " + (vste.getOffset()+1));
+				out.println("    ldd    r24, " + vste.getbase() + " + " + (vste.getOffset()));
+				out.println("    # push two byte expression onto stack");
+				out.println("    push   r25");
+				out.println("    push   r24");
+			}else if(vste.getWidth() == 1){
+				out.println("    # load a one byte variable from base+offset");
+				out.println("    ldd    r24, " + vste.getbase() + " + " + (vste.getOffset()));
+				out.println("    # push one byte expression onto stack");
+				out.println("    push   r24");
+			}
+		}else{
+
+			out.println("    # variable is a local or param variable");
+			out.println();
+
+			if(vste.getWidth() == 2){
+				out.println("    # load a two byte variable from base+offset");
+				out.println("    ldd    r25, " + vste.getbase() + " + " + (vste.getOffset()+1));
+				out.println("    ldd    r24, " + vste.getbase() + " + " + (vste.getOffset()));
+				out.println("    # push two byte expression onto stack");
+				out.println("    push   r25");
+				out.println("    push   r24");
+			}else if(vste.getWidth() == 1){
+				out.println("    # load a one byte variable from base+offset");
+				out.println("    ldd    r24, " + vste.getbase() + " + " + (vste.getOffset()));
+				out.println("    # push one byte expression onto stack");
+				out.println("    push   r24");
+			}
 		}
 		currReg -= 2;
 		out.println();
@@ -1260,7 +1332,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void visitMethodDecl(MethodDecl node)
 	{
 		inMethodDecl(node);
-		MethodSTE mste = (MethodSTE) mCurrentST.lookup(node.getName());
+		MethodSTE mste = (MethodSTE) mCurrentST.lookupEnclosing(node.getName());
 		String name = mste.getAVRLabel();
 
 		out.println();
@@ -1320,10 +1392,6 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			{
 				e.accept(this);
 			}
-			for(VarDecl v: copy){
-				out.println(v.getName());
-			}
-
 		}
 
 		out.println("/* done with function " + name + " prologue */");
@@ -1500,11 +1568,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void visitNewExp(NewExp node)
 	{
 		inNewExp(node);
+		ClassSTE cste = (ClassSTE) mCurrentST.lookup(node.getId());
+		
+		int size = cste.getClassSize();
 
 		out.println("    # NewExp");
-		out.println("    ldi    r24, lo8(0)");
-		out.println("    ldi    r25, hi8(0)");
-		out.println("    # allocating object of size 0 on heap");
+		out.println("    ldi    r24, lo8("+size+")");
+		out.println("    ldi    r25, hi8("+size+")");
+		out.println("    # allocating object of size "+size+" on heap");
 		out.println("    call    malloc");
 		out.println("    # push object address");
 		out.println("    # push two byte expression onto stack");
@@ -1699,38 +1770,6 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.flush();
 	}
 
-	private void promoteByte(){
-		//Get necessary labels
-		String ifNegativeLbl = new Label().toString();
-		String ifpositiveLbl = new Label().toString();
-		String signExtendLbl = new Label().toString();
-		String noSignExtendLbl = new Label().toString();
-		out.println("    #Load a one byte expression off stack");
-		out.println("    pop r18");
-		out.println("    #Load a one byte expression off stack");
-		out.println("    pop r24");
-		out.println();
-		out.println("    # promoting a byte to an int");
-		out.println("    tst     r24");
-		out.println("    brlt     " + ifNegativeLbl);
-		out.println("    ldi    r25, 0");
-		out.println("    jmp    " + ifpositiveLbl);
-		out.println(ifNegativeLbl + ":");
-		out.println("    ldi    r25, hi8(-1)");
-		out.println(ifpositiveLbl + ":");
-		out.println("    # promoting a byte to an int");
-		out.println("    tst     r18");
-		out.println("    brlt     " + signExtendLbl);
-		out.println("    ldi    r19, 0");
-		out.println("    jmp    " + noSignExtendLbl);
-		out.println(signExtendLbl + ":");
-		out.println("    ldi    r19, hi8(-1)");
-		out.println(noSignExtendLbl + ":");
-		out.println();
-	}
-
-
-
 	public void inProgram(Program node)
 	{
 		// This adds the prolog
@@ -1801,14 +1840,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	{
 		
 		// This code is just a place holder until
-		// We can actually get a heap point to "this"
+		// We can actually get a heap pointer to "this"
 		out.println("    # Place holder Call to \"this\"");
-		out.println("    ldi    r24, lo8(0)");
-		out.println("    ldi    r25, hi8(0)");
+		out.println("    ldd    r31, Y + 2");
+		out.println("    ldd    r30, Y + 1");
 		// In PA5 this pushes the address of "this" onto the stack
 		out.println("    # push two byte expression onto stack");
-		out.println("    push   r25");
-		out.println("    push   r24");
+		out.println("    push   r31");
+		out.println("    push   r30");
 	}
 
 	@Override
