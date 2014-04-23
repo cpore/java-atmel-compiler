@@ -1,8 +1,8 @@
 import meggy.Meggy;
 
-class ColorGrid {
+class ColorGridSimple {
 	public static void main(String [] args){
-		new Start().Start();
+		new Start().doStart();
 	}
 }
 
@@ -10,7 +10,7 @@ class Start{
 	boolean match;
 	byte x;
 	byte y;
-	public void Start(){
+	public void doStart(){
 		x = (byte)0;
 		y = (byte)0;
 		
@@ -23,22 +23,22 @@ class Start{
 
 		}
 	}
-	public byte increment(byte y) {
-		return  (byte)(y+1);
+	public byte increment(byte b) {
+		return  (byte)(b+1);
 	}
-	public void colorCell(int x, int y){
-		if( x == y ){
+	public void colorCell(int c, int d){
+		if( c == d ){
 			new TonePlayer().m(Meggy.Tone.A3);
-			Meggy.setPixel((byte)x, (byte)y, Meggy.Color.YELLOW);
+			Meggy.setPixel((byte)c, (byte)d, Meggy.Color.YELLOW);
 		}
 		else {
-			if( x < y){
+			if( c < y){
 				if(new ButtonChecker().checkButton()){
-					Meggy.setPixel((byte)x, (byte)y, Meggy.Color.RED);
+					Meggy.setPixel((byte)c, (byte)d, Meggy.Color.RED);
 				}
 			}
 			else{
-				Meggy.setPixel((byte)x, (byte)y, Meggy.Color.GREEN);
+				Meggy.setPixel((byte)c, (byte)d, Meggy.Color.GREEN);
 			}
 		}
 	}

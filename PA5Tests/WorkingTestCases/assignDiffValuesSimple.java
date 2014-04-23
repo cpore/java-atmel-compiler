@@ -1,6 +1,6 @@
 import meggy.Meggy;
 
-class assignDiffValues {
+class assignDiffValuesSimple {
 	public static void main(String [] args){
 		new C().foo( (1<2) );
 	}
@@ -8,18 +8,18 @@ class assignDiffValues {
 
 class C {
     int i;
-    C c;
+    C cc;
     
     public int foo( boolean p ) {
 
-        B b;
+        B bb;
         
         // correct in terms of typing
         p = true;
-        //c = this; 
-        //c.foo2(p);
-        b = new B();
-        b.foo();
+        cc = this; 
+        cc.foo2(p);
+        bb = new B();
+        bb.foo();
         return 1;
     }
     public void foo2(boolean b){

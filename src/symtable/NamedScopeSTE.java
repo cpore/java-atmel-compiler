@@ -11,7 +11,7 @@ public class NamedScopeSTE extends STE{
 	
 	public NamedScopeSTE(String name) {
 		super(name);
-		//mScope = new Scope(name, enclosing);
+		mScope = new Scope(name);
 	}
 	
 	public STE lookup(String sym) {

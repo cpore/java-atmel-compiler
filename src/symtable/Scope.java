@@ -1,6 +1,7 @@
 package symtable;
 
 import java.util.HashMap;
+import java.util.Map.Entry;
 
 public class Scope {
 
@@ -25,12 +26,6 @@ public class Scope {
 		if(ste != null)
 			return ste;
 
-		//ste = mEnclosing.lookup(Sym);
-		//STE ste = mDict.get(sym);
-		//if(ste != null)
-		//	return ste;
-
-		//ste = mEnclosing.lookup(Sym);
 		// look through named scopes if not in this scope
 		for(STE s: mDict.values()){
 			if(s instanceof NamedScopeSTE){
@@ -48,6 +43,8 @@ public class Scope {
 		
 		if(ste != null)
 			return ste;
+		if(mDict.size() == 0)
+			return null;
 
 		return mEnclosing.lookupEnclosing(Sym);
 	}
@@ -69,8 +66,34 @@ public class Scope {
 	}
 	
 	public void printDict(){
-		for(String s: mDict.keySet())
-			System.out.println("\t" + s);
+		System.out.println("Scope for " +parentId);
+		for(Entry<String, STE> e: mDict.entrySet()){
+			STE ste = (STE) e.getValue();
+			System.out.print("\tKey=" + e.getKey() + " Value=" + ste.getName());
+		
+			if(ste instanceof VarSTE){
+				VarSTE vste = (VarSTE) ste;
+				System.out.print(" TYPE=" + vste.getType());
+				if(vste.isMember())
+					System.out.println(" IS MEMBER");
+				else if(vste.isLocal())
+					System.out.println(" IS LOCAL");
+				else if(vste.isParam())
+					System.out.println(" IS PARAM");
+			}
+			else
+				System.out.println();
+			
+		}
+		for(STE s: mDict.values())
+			if(s instanceof NamedScopeSTE){
+				//System.out.print("\t");
+				((NamedScopeSTE) s).getScope().printDict();
+			}
+				
+			
+		
+		
 	}
 	
 	public HashMap<String,STE> getDict(){

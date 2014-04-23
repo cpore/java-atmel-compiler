@@ -127,6 +127,10 @@ public class SymTable {
     	for(Scope s: mScopeStack)
     		s.printDict();
     }
+    
+    public void printScopes(){
+    	mScope.printDict();
+    }
    
 /*
  */

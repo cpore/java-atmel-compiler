@@ -84,7 +84,7 @@ import exceptions.SemanticException;
 
 public class CheckTypes extends DepthFirstVisitor
 {
-	private boolean debug = false;
+	private boolean debug = true;
 	
 	private SymTable mCurrentST;
 	private ClassSTE cste;
@@ -201,7 +201,22 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outAssignStatement(AssignStatement node)
 	{
-		defaultOut(node);
+		Type expType = this.mCurrentST.getExpType(node.getExp());
+		Type varType = ((VarSTE) mCurrentST.lookupEnclosing(node.getId())).getType();
+		
+		if(debug){
+			System.out.println("EXP TYPE=" + expType);
+			System.out.println("VAR TYPE=" + varType);
+		}
+		if(expType == Type.BYTE && varType == Type.INT)
+			return; // good to go for widening
+		
+		if(!expType.toString().equals(varType.toString())){
+			throw new SemanticException(
+					"Invalid expression type assigned to variable " + node.getId(),
+					node.getExp().getLine(),
+					node.getExp().getPos());
+		}
 	}
 
 	@Override
@@ -429,26 +444,47 @@ public class CheckTypes extends DepthFirstVisitor
 
 		public void outCallStatement(CallStatement node)
 		{
+			/*//lookup method
+	    	MethodSTE mste1 = (MethodSTE) mCurrentST.lookup(node.getId());
+	    	if(mste1 == null){
+	    		throw new SemanticException(
+	    				"No method defined for " + node.getId(),
+	    				node.getLine(),
+	    				node.getPos());
+	    	}*/
+	    	//System.out.println("MSTE IS " + mste1.getName());
 			//get scope for exp
 			//find scope of class called
 			Type expType = mCurrentST.getExpType(node.getExp());
 			if(debug)
 				System.out.println("CALL TYPE " + expType);
-			ClassSTE classSTE = (ClassSTE) mCurrentST.getClassSTE(expType);
 			
-			MethodSTE mste = (MethodSTE) classSTE.lookupEnclosing(node.getId());
+			//lookup class
+			ClassSTE classSTE = (ClassSTE) mCurrentST.getClassSTE(expType);
 
-			if(mste == null){
-				throw new SemanticException(
-						"Method " + node.getId() + " does not exist in class type " + ((NewExp) node.getExp()).getId(),
-						node.getLine(),
-						node.getPos());
-			}
-
+	        if(classSTE == null){
+	    		throw new SemanticException(
+	    				"No class defined for " + expType.toString(),
+	    				node.getLine(),
+	    				node.getPos());
+	    	}
+	        //System.out.println("CLASS IS " + classSTE.getName());
+	        
+	        //ensure that method is within class
+	        MethodSTE msteInClass = (MethodSTE) classSTE.lookupEnclosing(node.getId());
+	        
+	    	if(msteInClass == null){
+	    		throw new SemanticException(
+	    				"Method " + node.getId() + " does not exist in class type " + classSTE.getName(),
+	    				node.getLine(),
+	    				node.getPos());
+	    	}		
+	    	//System.out.println("MSTE IN CLASS IS " + msteInClass.getName());
+	    	
 			//Check for proper number of arguments
-			if(mste.getSignature().size() != node.getArgs().size()){
+			if(msteInClass.getSignature().size() != node.getArgs().size()){
 				throw new SemanticException(
-						"Method " + node.getId() + " requires exactly " + mste.getSignature().size() + " arguments",
+						"Method " + node.getId() + " requires exactly " + msteInClass.getSignature().size() + " arguments",
 						node.getLine(),
 						node.getPos());
 			}
@@ -456,7 +492,24 @@ public class CheckTypes extends DepthFirstVisitor
 			//check for proper argument types
 			for(int i=0; i<node.getArgs().size(); i++){
 				Type argType = mCurrentST.getExpType(node.getArgs().get(i));
-				Type paramType = mste.getSignature().get(i);
+				Type paramType = msteInClass.getSignature().get(i);
+				if(debug){
+					System.out.println("ARG TYPE=" + expType);
+					System.out.println("PARAM TYPE=" + paramType);
+				}
+				if(paramType == null){
+					throw new SemanticException(
+							"Invalid parameter type for method " + node.getId(),
+							node.getLine(),
+							node.getPos());
+				}
+				
+				if(argType == null){
+					throw new SemanticException(
+							"Invalid argument type for method " + node.getId(),
+							node.getLine(),
+							node.getPos());
+				}
 				if(debug){
 					System.out.println("ARG TYPE=" + argType);
 					System.out.println("PARAM TYPE=" + paramType);
@@ -609,6 +662,7 @@ public class CheckTypes extends DepthFirstVisitor
 
 		public void outEqualExp(EqualExp node)
 		{
+			// TODO Handle class reference equality
 			Type lexpType = this.mCurrentST.getExpType(node.getLExp());
 			Type rexpType = this.mCurrentST.getExpType(node.getRExp());
 			if ((lexpType==Type.INT  || lexpType==Type.BYTE) &&
@@ -617,6 +671,8 @@ public class CheckTypes extends DepthFirstVisitor
 			}else if(lexpType==Type.BOOL && rexpType==Type.BOOL){
 				this.mCurrentST.setExpType(node, Type.BOOL);
 			}else if(lexpType==Type.COLOR && rexpType==Type.COLOR){
+				this.mCurrentST.setExpType(node, Type.BOOL);
+			}else if(lexpType.toString().equals(rexpType.toString())){
 				this.mCurrentST.setExpType(node, Type.BOOL);
 			}else {
 
@@ -668,7 +724,7 @@ public class CheckTypes extends DepthFirstVisitor
 
 		public void outFormal(Formal node)
 		{
-			VarSTE vste  = (VarSTE) mCurrentST.lookup(node.getName());
+			VarSTE vste  = (VarSTE) mCurrentST.lookupEnclosing(node.getName());
 			//Type.setClassType(node.getName());
 			vste.setType(node.getType());
 			mCurrentST.setExpType(node, vste.getType());

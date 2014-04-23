@@ -69,6 +69,7 @@ public class AVRallocVars extends DepthFirstVisitor{
 	private SymTable mCurrentST;
 	private int yOffset = 1;
 	private int zOffset = 0;
+	private boolean debug = false;
 	
 	public AVRallocVars(SymTable st){
 		mCurrentST = st;
@@ -502,13 +503,16 @@ public class AVRallocVars extends DepthFirstVisitor{
     {
         //TODO testing
     	VarSTE formal = (VarSTE) mCurrentST.lookupInnermost(node.getName());
-    	//System.out.println("NODE NAME = " +formal.getName());
+    	if(debug)
+    		System.out.println("NODE NAME = " +formal.getName());
         Type type = formal.getType();
         
-       // System.out.println("FORMAL TYPE IS " + type);
+        if(debug)
+        	System.out.println("FORMAL TYPE IS " + type);
         formal.setLocation("Y", yOffset);
         yOffset += type.getAVRTypeSize();
-        //System.out.println(formal.getOffset());
+        if(debug)
+        	System.out.println(formal.getOffset());
     	defaultOut(node);
     }
 
@@ -838,6 +842,8 @@ public class AVRallocVars extends DepthFirstVisitor{
     		System.out.println("COULD NOT FIND \"this\"");
     	
     	//receiver.setType(null);
+    	if(debug)
+    		System.out.println("this type=" + receiver.getType());
     	receiver.setLocation("Y", yOffset);
     	yOffset += 2;
     	//TODO testing

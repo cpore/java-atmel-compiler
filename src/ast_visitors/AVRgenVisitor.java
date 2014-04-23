@@ -33,6 +33,10 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public AVRgenVisitor(PrintWriter out, SymTable st) {
 		this.out = out;
 		mCurrentST = st;
+		if(debug){
+			System.out.println("----------------Starting AVRgenVistor--------------------");
+			mCurrentST.printScopes();
+		}
 	}
 
 	public void defaultIn(Node node)
@@ -176,6 +180,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 	public void outAssignStatement(AssignStatement node)
 	{
 		VarSTE vste = (VarSTE) mCurrentST.lookupEnclosing(node.getId());
+		
 		out.println("    ### AssignStatement");
 		out.println("    # load rhs exp");
 		Type expType = mCurrentST.getExpType(node.getExp());
@@ -194,6 +199,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			out.println("    ldd    r30, Y + 1");
 		}
 		
+		// TODO VSTE WIDTHS ARE NOT SET CORRECTLY!!!!
 		out.println("    # store rhs into var " + vste.getName());
 		if(vste.getWidth() == 2){
 			out.println("    std    " + vste.getbase() + " + " + (vste.getOffset()+1) + ", r25");
@@ -201,6 +207,14 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			
 		}else if(vste.getWidth() == 1){
 			out.println("    std    "  + vste.getbase() + " + " + (vste.getOffset()) + ", r24");
+		}
+
+		if(debug){
+			System.out.print("ASSIGN TYPE: " + expType + " To Variable: " + vste.getName() + " of TYPE: " + vste.getType());
+			if(vste.isMember())
+				System.out.println(" IS MEMBER");
+			else
+				System.out.println();
 		}
 
 		out.println();
@@ -533,7 +547,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 		out.println("    call    " + mste.getAVRLabel());
 		out.println();
 		// TODO handle return value here
-		if(mste.getReturnType().getAVRTypeSize() == 2){
+		/*if(mste.getReturnType().getAVRTypeSize() == 2){
 			out.println("    # handle return value");
 			out.println("    # push two byte expression onto stack");
 			out.println("    push   r25");
@@ -544,7 +558,7 @@ public class AVRgenVisitor extends DepthFirstVisitor {
 			out.println("    # handle return value");
 			out.println("    # push one byte expression onto stack");
 			out.println("    push   r24");
-		}
+		}*/
 		out.println();
 		out.flush();
 		outCallStatement(node);

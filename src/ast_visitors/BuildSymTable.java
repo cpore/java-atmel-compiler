@@ -30,7 +30,7 @@ import ast.node.VarDecl;
 import ast.visitor.DepthFirstVisitor;
 
 public class BuildSymTable extends DepthFirstVisitor{
-	private boolean debug = false;
+	private boolean debug = true;
 	
 	private SymTable mCurrentST;
 	private LinkedList<SemanticException> doubleDef;
@@ -455,6 +455,16 @@ public class BuildSymTable extends DepthFirstVisitor{
     		System.out.println("ISLOCAL=" + vste.isLocal());
     		System.out.println("ISPARAM=" + vste.isParam());
     	}
+    	
+    	 
+        if(mCurrentST.lookupInnermost(vste.getName()) != null){
+        	doubleDef.add(new SemanticException(
+					"Redefined symbol " + vste.getName(),
+					node.getLine(),
+					node.getPos()));
+ 
+        }
+    	
     	mCurrentST.insert(vste);
     }
 

@@ -47,4 +47,4 @@ done
 
 #createPng
 # clean up the files afterwards
-rm t1 t2 PA4Tests/*.s *.s *.png *.class PA4Tests/*.dot
+rm t1 t2 PA4Tests/*.s *.s *.png #*.class PA4Tests/*.dot
