@@ -120,4 +120,4 @@ fi
 #createPng
 
 echo
-rm t1 t2  *.png *.dot # *.class *.s
+rm t1 t2  *.png *.dot *.class *.s *.java

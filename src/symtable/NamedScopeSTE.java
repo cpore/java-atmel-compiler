@@ -22,6 +22,10 @@ public class NamedScopeSTE extends STE{
 		return mScope.lookupEnclosing(sym);
     }
 	
+	public STE lookupInnerMost(String sym){
+		return mScope.lookupInnermost(sym);
+	}
+	
 	public Scope getScope(){
 		return mScope;
 	}

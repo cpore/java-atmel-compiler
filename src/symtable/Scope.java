@@ -39,14 +39,19 @@ public class Scope {
 	}
 	
 	public STE lookupEnclosing(String Sym){
-		STE ste = mDict.get(Sym);
+	//	if(mEnclosing == null)
+	//		return null;
+		//printDict();
+		STE ste = null;
+		ste = mDict.get(Sym);
 		
 		if(ste != null)
 			return ste;
 		if(mDict.size() == 0)
 			return null;
 
-		return mEnclosing.lookupEnclosing(Sym);
+		ste = mEnclosing.lookupEnclosing(Sym);
+		return ste;
 	}
 	
 	public String getParentId(){
@@ -90,10 +95,6 @@ public class Scope {
 				//System.out.print("\t");
 				((NamedScopeSTE) s).getScope().printDict();
 			}
-				
-			
-		
-		
 	}
 	
 	public HashMap<String,STE> getDict(){

@@ -47,6 +47,8 @@ public class SymTable {
     }
     
     public ClassSTE getClassSTE(Type t){
+    	if(t == null || t.getClassName() == null)
+    		return null;
 		return (ClassSTE) mScope.getDict().get(t.getClassName());
 	}
     

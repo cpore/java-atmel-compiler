@@ -30,6 +30,8 @@ public class Type{
   }
   
   public String getClassName(){
+	  if(className == null)
+		  return null;
 	  return className.substring(6);
   }
   

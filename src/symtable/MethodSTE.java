@@ -66,6 +66,8 @@ public class MethodSTE extends NamedScopeSTE{
 	}
 	
 	public boolean checkReturnType(Type t){
+		if(returnType == null)
+			return false;
 		if(t == returnType)
 			return true;
 		if(t == Type.BYTE && returnType == Type.INT)

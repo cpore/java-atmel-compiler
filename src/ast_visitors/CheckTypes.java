@@ -19,6 +19,7 @@ import java.util.List;
 
 import symtable.ClassSTE;
 import symtable.MethodSTE;
+import symtable.STE;
 import symtable.Scope;
 import symtable.SymTable;
 import symtable.Type;
@@ -84,7 +85,7 @@ import exceptions.SemanticException;
 
 public class CheckTypes extends DepthFirstVisitor
 {
-	private boolean debug = true;
+	private boolean debug = false;
 	
 	private SymTable mCurrentST;
 	private ClassSTE cste;
@@ -360,34 +361,70 @@ public class CheckTypes extends DepthFirstVisitor
 
 	public void outCallExp(CallExp node)
 	{
-		//get scope for exp
-		//find scope of class called
 		Type expType = mCurrentST.getExpType(node.getExp());
 		if(debug)
 			System.out.println("CALL TYPE " + expType);
+		
+		//lookup class
 		ClassSTE classSTE = (ClassSTE) mCurrentST.getClassSTE(expType);
-		
-		MethodSTE mste = (MethodSTE) classSTE.lookupEnclosing(node.getId());
 
-		if(mste == null){
-			throw new SemanticException(
-					"Method " + node.getId() + " does not exist in class type " + ((NewExp) node.getExp()).getId(),
-					node.getLine(),
-					node.getPos());
-		}
-
+        if(classSTE == null){
+    		throw new SemanticException(
+    				"Receiver of method call must be a class type",
+    				node.getLine(),
+    				node.getPos());
+    	}
+        
+        //ensure that method is within class
+        if(debug){
+        	System.out.println("CLASS IS " + classSTE.getName());
+        	System.out.println("LOOKING UP: " + node.getId());
+        }
+        	
+        MethodSTE msteInClass = (MethodSTE) classSTE.lookupInnerMost(node.getId());
+        
+    	if(msteInClass == null){
+    		throw new SemanticException(
+    				"Method " + node.getId() + " does not exist in class type " + classSTE.getName(),
+    				node.getLine(),
+    				node.getPos());
+    	}		
+    	//System.out.println("MSTE IN CLASS IS " + msteInClass.getName());
+    	
 		//Check for proper number of arguments
-		if(mste.getSignature().size() != node.getArgs().size()){
+		if(msteInClass.getSignature().size() != node.getArgs().size()){
 			throw new SemanticException(
-					"Method " + node.getId() + " requires exactly " + mste.getSignature().size() + " arguments",
+					"Method " + node.getId() + " requires exactly " + msteInClass.getSignature().size() + " arguments",
 					node.getLine(),
 					node.getPos());
 		}
 		
+		if(debug){
+			for(Type t: msteInClass.getSignature())
+				System.out.println("SIG TYPE=" + t);
+		}
+
 		//check for proper argument types
 		for(int i=0; i<node.getArgs().size(); i++){
 			Type argType = mCurrentST.getExpType(node.getArgs().get(i));
-			Type paramType = mste.getSignature().get(i);
+			Type paramType = msteInClass.getSignature().get(i);
+			if(debug){
+				System.out.println("ARG TYPE=" + expType);
+				System.out.println("PARAM TYPE=" + paramType);
+			}
+			if(paramType == null){
+				throw new SemanticException(
+						"Invalid parameter type for method " + node.getId(),
+						node.getLine(),
+						node.getPos());
+			}
+			
+			if(argType == null){
+				throw new SemanticException(
+						"Invalid argument type for method " + node.getId(),
+						node.getLine(),
+						node.getPos());
+			}
 			if(debug){
 				System.out.println("ARG TYPE=" + argType);
 				System.out.println("PARAM TYPE=" + paramType);
@@ -402,7 +439,7 @@ public class CheckTypes extends DepthFirstVisitor
 			}
 		}
 
-		mCurrentST.setExpType(node, mste.getReturnType()); 
+		mCurrentST.setExpType(node, msteInClass.getReturnType()); 
 
 		//typeCheck(receiver, funcName, args):
 		//check that receiver is of type Class
@@ -444,17 +481,6 @@ public class CheckTypes extends DepthFirstVisitor
 
 		public void outCallStatement(CallStatement node)
 		{
-			/*//lookup method
-	    	MethodSTE mste1 = (MethodSTE) mCurrentST.lookup(node.getId());
-	    	if(mste1 == null){
-	    		throw new SemanticException(
-	    				"No method defined for " + node.getId(),
-	    				node.getLine(),
-	    				node.getPos());
-	    	}*/
-	    	//System.out.println("MSTE IS " + mste1.getName());
-			//get scope for exp
-			//find scope of class called
 			Type expType = mCurrentST.getExpType(node.getExp());
 			if(debug)
 				System.out.println("CALL TYPE " + expType);
@@ -464,14 +490,18 @@ public class CheckTypes extends DepthFirstVisitor
 
 	        if(classSTE == null){
 	    		throw new SemanticException(
-	    				"No class defined for " + expType.toString(),
+	    				"Receiver of method call must be a class type",
 	    				node.getLine(),
 	    				node.getPos());
 	    	}
-	        //System.out.println("CLASS IS " + classSTE.getName());
 	        
 	        //ensure that method is within class
-	        MethodSTE msteInClass = (MethodSTE) classSTE.lookupEnclosing(node.getId());
+	        if(debug){
+	        	System.out.println("CLASS IS " + classSTE.getName());
+	        	System.out.println("LOOKING UP: " + node.getId());
+	        }
+	        
+	        MethodSTE msteInClass = (MethodSTE) classSTE.lookupInnerMost(node.getId());
 	        
 	    	if(msteInClass == null){
 	    		throw new SemanticException(
@@ -487,6 +517,11 @@ public class CheckTypes extends DepthFirstVisitor
 						"Method " + node.getId() + " requires exactly " + msteInClass.getSignature().size() + " arguments",
 						node.getLine(),
 						node.getPos());
+			}
+			
+			if(debug){
+				for(Type t: msteInClass.getSignature())
+					System.out.println("SIG TYPE=" + t);
 			}
 
 			//check for proper argument types
@@ -596,7 +631,8 @@ public class CheckTypes extends DepthFirstVisitor
 
 		public void outClassType(ClassType node)
 		{
-			defaultOut(node);
+			Type.setClassType(node.getName());
+			mCurrentST.setExpType(node, Type.getClassType(node.getName()));
 		}
 
 		@Override
@@ -1145,7 +1181,8 @@ public class CheckTypes extends DepthFirstVisitor
 		public void inMethodDecl(MethodDecl node)
 		{
 			// push a new scope
-			mCurrentST.pushScope(node.getName());		
+			mCurrentST.pushScope(node.getName());
+
 		}
 
 		public void outMethodDecl(MethodDecl node)
@@ -1156,6 +1193,8 @@ public class CheckTypes extends DepthFirstVisitor
 			if(mste == null){
 				System.out.println("METHOD NOT FOUND");
 			}
+			
+			
 			//check that the return type in the signature conforms with
 			// the type of the return expression
 			mste.setExpType(node.getExp());
@@ -1168,6 +1207,11 @@ public class CheckTypes extends DepthFirstVisitor
 							node.getExp().getLine(),
 							node.getExp().getPos());
 				}
+			}
+			
+			if(debug){
+				for(Type t: mste.getSignature())
+					System.out.println("SIG TYPE=" + t);
 			}
 
 			mCurrentST.popScope();
@@ -1318,7 +1362,14 @@ public class CheckTypes extends DepthFirstVisitor
 
 		public void outNewExp(NewExp node)
 		{
+			Type.setClassType(node.getId());
+			mCurrentST.setExpType(node, Type.getClassType(node.getId()));
 			// try to find class id in symbol table
+			STE ste = mCurrentST.lookup(node.getId());
+			if(ste != null && !(ste instanceof ClassSTE)){
+				return;
+			}
+				
 			ClassSTE cste = (ClassSTE) mCurrentST.lookup(node.getId());
 
 			// Bitch if it can't be found
@@ -1327,8 +1378,6 @@ public class CheckTypes extends DepthFirstVisitor
 						"Undeclared class type in new operator",
 						node.getLine(), node.getPos());
 			}
-			Type.setClassType(node.getId());
-			mCurrentST.setExpType(node, Type.getClassType(node.getId()));
 
 		}
 
@@ -1475,7 +1524,11 @@ public class CheckTypes extends DepthFirstVisitor
 			// set classname of "this"
 			VarSTE thisSTE = (VarSTE) mCurrentST.lookupInnermost(node.getLexeme());
 			thisSTE.setClassName(cste.getName());
-			//Type.setClassType(cste.getName());
+			Type.setClassType(cste.getName());
+			
+			if(debug)
+				System.out.println("THIS TYPE=" + Type.getClassType(cste.getName()));
+			
 			thisSTE.setClassType(Type.getClassType(cste.getName()));
 			mCurrentST.setExpType(node, Type.getClassType(cste.getName()));
 		}
@@ -1581,7 +1634,7 @@ public class CheckTypes extends DepthFirstVisitor
 
 		public void outVarDecl(VarDecl node)
 		{
-			defaultOut(node);
+			//defaultOut(node);
 		}
 
 		@Override
